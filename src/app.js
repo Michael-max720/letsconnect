@@ -24,16 +24,7 @@ app.use(session({
   cookie: { maxAge: 1000 * 60 * 60 * 8 },
 }));
 
-// --- Health check (confirms the server + DB are both up) ---
-const { pool } = require('./config/db');
-app.get('/api/health', async (req, res) => {
-  try {
-    await pool.query('SELECT 1');
-    res.json({ status: 'ok', database: 'connected' });
-  } catch (err) {
-    res.status(500).json({ status: 'error', database: 'disconnected', message: err.message });
-  }
-});
+
 
 // --- Module B routes will be mounted here as they're built ---
 app.use('/api/auth', require('./routes/auth.routes'));
