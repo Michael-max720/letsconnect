@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   payment_method  ENUM('mpesa','card') NOT NULL,
   payment_status  ENUM('pending','confirmed','failed') NOT NULL DEFAULT 'pending',
   mpesa_receipt   VARCHAR(40),
+  mpesa_checkout_request_id VARCHAR(60),
   transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (buyer_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
