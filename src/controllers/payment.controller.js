@@ -85,6 +85,32 @@ async function handleCallback(req, res) {
       "UPDATE tickets SET status = 'paid' WHERE transaction_id = ?",
       [transaction.transaction_id]
     );
+
+    const userModel = require('../models/user.model');
+    const buyer = await userModel.findById(transaction.buyer_id);
+    const [ticketRows] = await pool.query(
+      `SELECT t.ticket_id, e.title AS event_title, e.event_date, e.venue
+       FROM tickets t
+       JOIN ticket_categories tc ON t.category_id = tc.category_id
+       JOIN events e ON tc.event_id = e.event_id
+       WHERE t.transaction_id = ?`,
+      [transaction.transaction_id]
+    );
+
+    const { sendTicketConfirmation } = require('../utils/email.util');
+    for (const t of ticketRows) {
+      try {
+        await sendTicketConfirmation({
+          toEmail: buyer.email,
+          eventTitle: t.event_title,
+          eventDate: t.event_date,
+          venue: t.venue,
+          ticketId: t.ticket_id,
+        });
+      } catch (emailErr) {
+        console.error('Email send failed for ticket', t.ticket_id, emailErr.message);
+      }
+    }
   } else {
     await transactionModel.markFailed(transaction.transaction_id);
 

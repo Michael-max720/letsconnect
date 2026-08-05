@@ -38,4 +38,6 @@ app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/events', require('./routes/event.routes'));
 app.use('/api/ticket-categories', require('./routes/ticketCategory.routes'));
 app.use('/api/payments', require('./routes/payment.routes'));
+app.use('/api/tickets', require('./routes/ticket.routes'));
+
 module.exports = app;

@@ -44,5 +44,16 @@ async function findByBuyer(buyerId) {
   );
   return rows;
 }
+async function findByIdWithDetails(ticketId) {
+  const [rows] = await pool.query(
+    `SELECT t.*, tc.name AS category_name, tc.price, e.title AS event_title, e.event_date, e.venue
+     FROM tickets t
+     JOIN ticket_categories tc ON t.category_id = tc.category_id
+     JOIN events e ON tc.event_id = e.event_id
+     WHERE t.ticket_id = ?`,
+    [ticketId]
+  );
+  return rows[0] || null;
+}
 
-module.exports = { countSoldForCategory, reserveTickets, attachTransaction, findByBuyer };
+module.exports = { countSoldForCategory, reserveTickets, attachTransaction, findByBuyer, findByIdWithDetails };
