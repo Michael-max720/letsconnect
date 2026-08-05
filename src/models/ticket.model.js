@@ -56,4 +56,23 @@ async function findByIdWithDetails(ticketId) {
   return rows[0] || null;
 }
 
-module.exports = { countSoldForCategory, reserveTickets, attachTransaction, findByBuyer, findByIdWithDetails };
+async function findByQrToken(qrToken) {
+  const [rows] = await pool.query(
+    `SELECT t.*, e.title AS event_title, e.event_date
+     FROM tickets t
+     JOIN ticket_categories tc ON t.category_id = tc.category_id
+     JOIN events e ON tc.event_id = e.event_id
+     WHERE t.qr_code_token = ?`,
+    [qrToken]
+  );
+  return rows[0] || null;
+}
+
+async function markUsed(ticketId) {
+  await pool.query(
+    "UPDATE tickets SET status = 'used', used_at = NOW() WHERE ticket_id = ?",
+    [ticketId]
+  );
+}
+
+module.exports = { countSoldForCategory, reserveTickets, attachTransaction, findByBuyer, findByIdWithDetails, findByQrToken, markUsed };

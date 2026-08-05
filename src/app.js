@@ -39,5 +39,6 @@ app.use('/api/events', require('./routes/event.routes'));
 app.use('/api/ticket-categories', require('./routes/ticketCategory.routes'));
 app.use('/api/payments', require('./routes/payment.routes'));
 app.use('/api/tickets', require('./routes/ticket.routes'));
-
+app.use('/api/admin', require('./routes/admin.routes'));
+app.use('/api/gate', require('./routes/scan.routes'));
 module.exports = app;
