@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign up - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="topbar">Lets Connect</div>
+<div class="container" style="max-width:420px;">
+<div class="frosted-panel" style="margin-top:24px;"></div>
+  <h2 style="margin-top:24px;">Create account</h2>
+  <div id="error-box" class="alert alert-error" style="display:none;"></div>
+
+  <form id="register-form">
+    <div class="field">
+      <label>Full name</label>
+      <input type="text" id="name" required>
+    </div>
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="email" required>
+    </div>
+    <div class="field">
+      <label>Phone number</label>
+      <input type="tel" id="phone" placeholder="07XX XXX XXX" required>
+    </div>
+    <div class="field">
+      <label>I am registering as</label>
+      <select id="role">
+        <option value="attendee">Attendee</option>
+        <option value="organiser">Organiser</option>
+      </select>
+    </div>
+   <div class="field">
+  <label>Password</label>
+  <input type="password" id="password" required minlength="6">
+</div>
+<div class="field">
+  <label>Confirm password</label>
+  <input type="password" id="confirmPassword" required minlength="6">
+</div>
+    <button type="submit" class="btn btn-primary">Create account</button>
+    <a href="/login.html" class="btn-link">Already have an account? Log in</a>
+  </form>
+</div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+document.getElementById('register-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const password = document.getElementById('password').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  if (password !== confirmPassword) {
+    return showError('Passwords do not match.');
+  }
+  try {
+    const data = await api('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        phone: document.getElementById('phone').value,
+        role: document.getElementById('role').value,
+        password: document.getElementById('password').value,
+      }),
+    });
+    // pass userId to the verify page via the URL
+    window.location.href = '/verify.html?userId=' + data.userId;
+  } catch (err) {
+    showError(err.message);
+  }
+});
+</script>
+</body>
+</html>

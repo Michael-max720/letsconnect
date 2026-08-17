@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="topbar">Platform overview</div>
+<div id="app-nav"></div>
+<div class="container">
+  <div class="stat-grid" id="stats"></div>
+  <h3>Needs attention</h3>
+  <div id="pending-list">Loading...</div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script>
+async function loadStats() {
+  const { stats } = await api('/admin/stats');
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card"><div class="label">Organisers</div><div class="value">${stats.totalOrganisers}</div></div>
+    <div class="stat-card"><div class="label">Pending</div><div class="value">${stats.pendingCount}</div></div>
+    <div class="stat-card"><div class="label">Live events</div><div class="value">${stats.liveEvents}</div></div>
+    <div class="stat-card"><div class="label">Revenue</div><div class="value">${money(stats.platformRevenue)}</div></div>
+  `;
+}
+
+async function loadPending() {
+  const { pending } = await api('/admin/pending');
+  const list = document.getElementById('pending-list');
+  if (pending.length === 0) {
+    list.innerHTML = '<p style="color:var(--sub);">Nothing pending.</p>';
+    return;
+  }
+  list.innerHTML = pending.map(u => `
+    <div class="card">
+      <strong>${u.name}</strong>
+      <div style="font-size:13px; color:var(--sub); margin:4px 0 12px;">${u.email} &middot; ${u.role}</div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-outline" onclick="decide(${u.user_id}, 'reject')">Reject</button>
+        <button class="btn btn-primary" onclick="decide(${u.user_id}, 'approve')">Approve</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function decide(userId, action) {
+  try {
+    await api(`/admin/${userId}/${action}`, { method: 'PATCH' });
+    loadPending();
+    loadStats();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+loadStats().catch(() => {
+  document.getElementById('stats').innerHTML = '<p style="color:var(--danger-text);">Please log in as an admin to view this page.</p>';
+});
+loadPending().catch(() => {
+  document.getElementById('pending-list').innerHTML = '';
+});
+renderNav('home');
+</script>
+</body>
+</html>

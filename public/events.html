@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discover events - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="topbar">Discover events</div>
+<div id="app-nav"></div>
+<div class="container">
+ <p id="welcome-msg" style="display:inline-block; background:rgba(255,255,255,0.85); backdrop-filter:blur(6px); color:var(--ink); font-size:14px; font-weight:600; margin:16px 0 0; padding:8px 16px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></p>
+  <div class="field" style="margin-top:16px;">
+    <input type="text" id="search" placeholder="Search events, venues...">
+  </div>
+
+  <div id="event-grid" class="event-grid"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script src="/js/bg-rotator.js"></script>
+<script>
+startBackgroundRotator([
+  'https://www.pexels.com/photo/a-person-walking-while-carrying-a-backpack-10521177/',
+  'https://images.pexels.com/photos/20179680/pexels-photo-20179680.jpeg',
+  'https://images.pexels.com/photos/30174882/pexels-photo-30174882.jpeg',
+  'https://images.unsplash.com/photo-1573152958734-1922c188fba3?q=80&w=1032&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=1007&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.pexels.com/photos/4555454/pexels-photo-4555454.jpeg',
+  'https://unsplash.com/photos/man-playing-drums-PKmjFH8dGMU'
+]);
+</script>
+<script>
+const categoryColors = {
+  'Music': { bg: '#F1EEFE', text: '#4A4099' },
+  'Safari': { bg: '#FDF0E6', text: '#8A4B22' },
+  'Conference': { bg: '#E9F6F0', text: '#146C4C' },
+  'Sports': { bg: '#FCEEF1', text: '#9C3B57' },
+  'Comedy': { bg: '#FCF3E3', text: '#8A5A0C' },
+};
+function colorFor(cat) {
+  return categoryColors[cat] || { bg: '#EAF1FB', text: '#1F3864' };
+}
+
+async function loadEvents(search = '') {
+  const grid = document.getElementById('event-grid');
+  try {
+    const query = search ? '?search=' + encodeURIComponent(search) : '';
+    const { events } = await api('/events' + query);
+    if (events.length === 0) {
+      grid.innerHTML = '<p style="grid-column:1/-1; color:var(--sub);">No events found.</p>';
+      return;
+    }
+    grid.innerHTML = events.map((ev, i) => {
+      const col = colorFor(ev.category);
+      const date = new Date(ev.event_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      const thumbStyle = ev.cover_image_url
+        ? `background-image:url('${ev.cover_image_url}'); background-size:cover; background-position:center; animation:none;`
+        : '';
+      return `
+        <div class="event-card" style="animation-delay:${i * 0.06}s" onclick="location.href='/event-details.html?id=${ev.event_id}'">
+          <div class="event-thumb" style="${thumbStyle}">
+            <span class="category-pill" style="background:${col.bg};color:${col.text};">${ev.category || 'Event'}</span>
+          </div>
+          <div class="body">
+            <p class="title">${ev.title}</p>
+            <p class="meta">${date} &middot; ${ev.venue || ''}</p>
+          </div>
+        </div>`;
+    }).join('');
+  } catch (err) {
+    grid.innerHTML = '<p style="grid-column:1/-1; color:var(--danger-text);">Could not load events.</p>';
+  }
+}
+
+document.getElementById('search').addEventListener('input', (e) => {
+  loadEvents(e.target.value);
+});
+
+loadEvents();
+renderNav('home').then(session => {
+  if (session) {
+    document.getElementById('welcome-msg').textContent = 'Welcome, ' + session.name.split(' ')[0];
+  }
+});
+</script>
+</body>
+</html>
+</html>

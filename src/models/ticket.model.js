@@ -46,7 +46,7 @@ async function findByBuyer(buyerId) {
 }
 async function findByIdWithDetails(ticketId) {
   const [rows] = await pool.query(
-    `SELECT t.*, tc.name AS category_name, tc.price, e.title AS event_title, e.event_date, e.venue
+    `SELECT t.*, tc.name AS category_name, tc.price, e.title AS event_title, e.event_date, e.venue, e.cover_image_url
      FROM tickets t
      JOIN ticket_categories tc ON t.category_id = tc.category_id
      JOIN events e ON tc.event_id = e.event_id

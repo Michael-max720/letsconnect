@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="topbar">Dashboard</div>
+<div id="app-nav"></div>
+<div class="container">
+  <div class="stat-grid" id="stats"></div>
+  <a href="/organiser-create-event.html" class="btn btn-primary" style="margin-bottom:20px; display:block;">+ Create event</a>
+  <h3>My events</h3>
+  <div id="event-list">Loading...</div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script>
+const statusBadge = {
+  published: '<span class="badge badge-success">Published</span>',
+  draft: '<span class="badge badge-warn">Draft</span>',
+  cancelled: '<span class="badge badge-danger">Cancelled</span>',
+};
+
+async function load() {
+  try {
+    const { events } = await api('/events/mine');
+    document.getElementById('stats').innerHTML = `
+      <div class="stat-card"><div class="label">Total events</div><div class="value">${events.length}</div></div>
+      <div class="stat-card"><div class="label">Published</div><div class="value">${events.filter(e => e.status === 'published').length}</div></div>
+    `;
+    const list = document.getElementById('event-list');
+    if (events.length === 0) {
+      list.innerHTML = '<p style="color:var(--sub);">No events yet.</p>';
+      return;
+    }
+    list.innerHTML = events.map(ev => `
+      <div class="card" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;"
+           onclick="location.href='/organiser-create-ticket.html?eventId=${ev.event_id}'">
+        <span>${ev.title}</span>
+        ${statusBadge[ev.status] || ''}
+      </div>
+    `).join('');
+  } catch (err) {
+    document.getElementById('event-list').innerHTML = '<p style="color:var(--danger-text);">Please log in as an organiser.</p>';
+  }
+}
+load();
+renderNav('home');
+</script>
+</body>
+</html>

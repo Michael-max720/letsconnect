@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My ticket - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="topbar">
+  <a href="/my-tickets.html">&larr;</a>
+  <span>My ticket</span>
+  <span></span>
+</div>
+<div class="container" style="max-width:420px; text-align:center;" id="content">Loading...</div>
+
+<script src="/js/api.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const ticketId = params.get('id');
+
+async function load() {
+  const content = document.getElementById('content');
+  try {
+    const { ticket, qrCode } = await api('/tickets/' + ticketId);
+    const date = new Date(ticket.event_date).toLocaleString('en-GB', {
+      weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+    });
+    const bannerStyle = ticket.cover_image_url
+      ? `background-image:url('${ticket.cover_image_url}'); background-size:cover; background-position:center;`
+      : '';
+    const heroStyle = ticket.cover_image_url
+  ? `background-image:linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.75)), url('${ticket.cover_image_url}'); background-size:cover; background-position:center;`
+  : `background:linear-gradient(135deg, var(--navy), #3A5A9C);`;
+
+content.innerHTML = `
+  <div style="${heroStyle} border-radius:16px; padding:24px; color:white; text-align:left; min-height:160px; display:flex; flex-direction:column; justify-content:flex-end;">
+    <strong style="font-size:18px;">${ticket.event_title}</strong>
+    <div style="font-size:13px; margin-top:6px; opacity:0.9;">${date}</div>
+    <div style="font-size:13px; opacity:0.9;">${ticket.venue || ''}</div>
+  </div>
+  <div style="background:white; border:2px dashed var(--line); border-radius:16px; padding:20px; margin-top:-12px; position:relative;">
+    <img src="${qrCode}" style="width:180px; height:180px; margin:0 auto 16px; display:block;">
+    <div style="border-top:1px dashed var(--line); padding-top:14px;">
+      <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--sub);">Category</span><strong>${ticket.category_name}</strong></div>
+      <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--sub);">Ticket ID</span><strong>#${ticket.ticket_id}</strong></div>
+      <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--sub);">Status</span><strong style="text-transform:capitalize;">${ticket.status}</strong></div>
+    </div>
+  </div>
+`;
+  } catch (err) {
+    content.innerHTML = '<p style="color:var(--danger-text);">Could not load this ticket.</p>';
+  }
+}
+load();
+</script>
+</body>
+</html>

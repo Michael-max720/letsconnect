@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My tickets - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="topbar">My tickets</div>
+<div id="app-nav"></div>
+<div class="container">
+  <div id="ticket-list">Loading...</div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script>
+const statusBadge = {
+  paid: '<span class="badge badge-success">Paid</span>',
+  used: '<span class="badge badge-warn">Used</span>',
+  reserved: '<span class="badge badge-warn">Pending payment</span>',
+  cancelled: '<span class="badge badge-danger">Cancelled</span>',
+  refunded: '<span class="badge badge-danger">Refunded</span>',
+};
+
+async function load() {
+  const list = document.getElementById('ticket-list');
+  try {
+    const { tickets } = await api('/tickets/mine');
+    if (tickets.length === 0) {
+      list.innerHTML = '<p style="color:var(--sub); margin-top:20px;">No tickets yet. <a href="/events.html">Browse events</a></p>';
+      return;
+    }
+    list.innerHTML = tickets.map(t => `
+      <div class="card" style="cursor:pointer;" onclick="location.href='/ticket-view.html?id=${t.ticket_id}'">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <strong>${t.event_title}</strong>
+            <div style="font-size:13px; color:var(--sub); margin-top:4px;">${t.category_name} &middot; Ticket #${t.ticket_id}</div>
+          </div>
+          ${statusBadge[t.status] || ''}
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    list.innerHTML = '<p style="color:var(--danger-text);">Please log in to view your tickets.</p>';
+  }
+}
+load();
+renderNav('tickets');
+</script>
+</body>
+</html>

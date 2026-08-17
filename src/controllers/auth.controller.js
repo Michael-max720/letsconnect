@@ -74,5 +74,22 @@ function logout(req, res) {
     res.json({ message: 'Logged out.' });
   });
 }
+async function resendOtp(req, res) {
+  const { userId } = req.body;
+  const user = await userModel.findById(userId);
+  if (!user) return res.status(404).json({ error: 'User not found.' });
 
-module.exports = { register, verifyOtp, login, logout };
+  const { code, expiresAt } = generateOtp();
+  await userModel.setOtp(userId, code, expiresAt);
+
+  console.log(`[DEV ONLY] OTP for ${user.email}: ${code}`);
+
+  res.json({ message: 'A new code has been sent.' });
+}
+async function getCurrentUser(req, res) {
+  if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
+  const user = await userModel.findById(req.session.userId);
+  if (!user) return res.status(401).json({ error: 'Not logged in.' });
+  res.json({ userId: user.user_id, name: user.name, email: user.email, role: user.role });
+}
+module.exports = { register, verifyOtp, login, logout, resendOtp, getCurrentUser };

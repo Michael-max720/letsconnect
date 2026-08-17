@@ -6,5 +6,5 @@ const { requireAuth, requireRole } = require('../middleware/auth.middleware');
 
 router.post('/checkout', requireAuth, requireRole('attendee'), paymentController.initiateCheckout);
 router.post('/callback', paymentController.handleCallback);
-
+router.get('/status/:transactionId', requireAuth, paymentController.checkStatus);
 module.exports = router;

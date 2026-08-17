@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scan ticket - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="topbar">Scan ticket</div>
+<div id="app-nav"></div>
+<div class="container" style="max-width:420px;">
+  <div class="field">
+    <label>Ticket QR token</label>
+    <input type="text" id="qrToken" placeholder="Paste or type the ticket's QR token">
+  </div>
+  <button class="btn btn-primary" id="scan-btn">Scan</button>
+
+  <div id="result" style="margin-top:20px;"></div>
+
+  <h3 style="margin-top:32px;">Today's scans</h3>
+  <div id="history"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script>
+async function scan() {
+  const token = document.getElementById('qrToken').value.trim();
+  if (!token) return;
+  const resultEl = document.getElementById('result');
+  try {
+    const res = await fetch('/api/gate/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ qrToken: token }),
+    });
+    const data = await res.json();
+    const kind = data.result === 'valid' ? 'success' : 'error';
+    resultEl.innerHTML = `<div class="alert alert-${kind}">${data.message}</div>`;
+  } catch (err) {
+    resultEl.innerHTML = `<div class="alert alert-error">Could not reach the server.</div>`;
+  }
+  document.getElementById('qrToken').value = '';
+  loadHistory();
+}
+
+async function loadHistory() {
+  try {
+    const { scans } = await api('/gate/history');
+    document.getElementById('history').innerHTML = scans.map(s => `
+      <div class="card" style="display:flex; justify-content:space-between;">
+        <span>Ticket ${s.ticket_id || '—'}</span>
+        <span class="badge ${s.result === 'valid' ? 'badge-success' : (s.result === 'already_used' ? 'badge-warn' : 'badge-danger')}">${s.result}</span>
+      </div>
+    `).join('');
+  } catch (err) { /* not logged in yet */ }
+}
+
+document.getElementById('scan-btn').addEventListener('click', scan);
+loadHistory();
+renderNav('home');
+</script>
+</body>
+</html>

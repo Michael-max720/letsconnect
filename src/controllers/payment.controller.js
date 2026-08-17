@@ -53,7 +53,8 @@ async function initiateCheckout(req, res) {
       ticketIds,
       checkoutRequestId: stkResponse.CheckoutRequestID,
     });
- } catch (err) {
+} catch (err) {
+    console.error('M-Pesa STK push failed:', err.response?.data || err.message);
     await transactionModel.markFailed(transactionId);
     res.status(502).json({ error: 'Could not reach M-Pesa. Please try again.' });
   }
@@ -123,5 +124,14 @@ async function handleCallback(req, res) {
 
   res.json({ ResultCode: 0, ResultDesc: 'Received' });
 }
+async function checkStatus(req, res) {
+  const transaction = await transactionModel.findById(req.params.transactionId);
+  if (!transaction) return res.status(404).json({ error: 'Transaction not found.' });
+  if (transaction.buyer_id !== req.session.userId) {
+    return res.status(403).json({ error: 'Not your transaction.' });
+  }
+  res.json({ status: transaction.payment_status });
+}
 
-module.exports = { initiateCheckout, handleCallback };
+module.exports = { initiateCheckout, handleCallback, checkStatus };
+

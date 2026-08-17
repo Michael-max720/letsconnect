@@ -2,7 +2,8 @@
 const eventModel = require('../models/event.model');
 
 async function createEvent(req, res) {
-  const { title, description, category, venue, eventDate, coverImageUrl } = req.body;
+  const { title, description, category, venue, eventDate } = req.body;
+  const coverImageUrl = req.file ? '/uploads/' + req.file.filename : (req.body.coverImageUrl || null);
 
   if (!title || !eventDate) {
     return res.status(400).json({ error: 'Title and event date are required.' });

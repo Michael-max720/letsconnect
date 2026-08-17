@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event details - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="topbar">
+  <a href="/events.html">&larr;</a>
+  <span>Event details</span>
+  <span></span>
+</div>
+<div class="container" id="content">Loading...</div>
+
+<script src="/js/api.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const eventId = params.get('id');
+
+async function load() {
+  const content = document.getElementById('content');
+  try {
+    const { event, ticketCategories } = await api('/events/' + eventId + '/tickets');
+    const date = new Date(event.event_date).toLocaleString('en-GB', {
+      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    const thumbStyle = event.cover_image_url
+      ? `background-image:url('${event.cover_image_url}'); background-size:cover; background-position:center; animation:none;`
+      : '';
+
+    content.innerHTML = `
+      <div class="event-thumb" style="height:160px; border-radius:12px; margin-top:16px; ${thumbStyle}"></div>
+      <h2 style="margin:16px 0 4px;">${event.title}</h2>
+      <p style="color:var(--sub); margin:0 0 4px;">${date}</p>
+      <p style="color:var(--sub); margin:0 0 16px;">${event.venue || ''}</p>
+      <p style="margin-bottom:20px;">${event.description || ''}</p>
+
+      <h3>Select ticket category</h3>
+      <div id="categories"></div>
+
+      <button class="btn btn-primary" id="continue-btn" style="margin-top:12px;" disabled>Continue</button>
+    `;
+
+    let selected = null;
+    const catsEl = document.getElementById('categories');
+    catsEl.innerHTML = ticketCategories.map(cat => `
+      <div class="card cat-option" data-id="${cat.category_id}" data-price="${cat.price}" data-name="${cat.name}"
+           style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong>${cat.name}</strong>
+          <div style="font-size:12px; color:var(--sub);">${cat.quota} available</div>
+        </div>
+        <div style="color:var(--navy); font-weight:700;">${money(cat.price)}</div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.cat-option').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.cat-option').forEach(o => o.style.border = '1px solid var(--line)');
+        el.style.border = '2px solid var(--navy)';
+        selected = { id: el.dataset.id, price: el.dataset.price, name: el.dataset.name };
+        document.getElementById('continue-btn').disabled = false;
+      });
+    });
+
+    document.getElementById('continue-btn').addEventListener('click', () => {
+      if (!selected) return;
+      window.location.href = `/checkout.html?categoryId=${selected.id}&eventTitle=${encodeURIComponent(event.title)}&catName=${encodeURIComponent(selected.name)}&price=${selected.price}`;
+    });
+
+  } catch (err) {
+    content.innerHTML = '<p style="color:var(--danger-text);">Could not load this event.</p>';
+  }
+}
+
+load();
+</script>
+</body>
+</html>

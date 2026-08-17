@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="topbar">Profile</div>
+<div id="app-nav"></div>
+<div class="container" id="content">Loading...</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script>
+const roleLabels = {
+  attendee: 'Attendee',
+  organiser: 'Organiser',
+  admin: 'Administrator',
+  gate_agent: 'Gate Agent',
+};
+
+async function load() {
+  const content = document.getElementById('content');
+  try {
+    const session = await api('/auth/me');
+    const initials = session.name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+    content.innerHTML = `
+      <div class="card" style="text-align:center; margin-top:16px;">
+        <div class="avatar-circle">${initials}</div>
+        <strong style="font-size:16px;">${session.name}</strong>
+        <div style="color:var(--sub); font-size:13px; margin-top:2px;">${roleLabels[session.role] || session.role}</div>
+      </div>
+
+      <div class="card">
+        <div class="profile-row"><span class="k">Email</span><span>${session.email}</span></div>
+        <div class="profile-row"><span class="k">Role</span><span>${roleLabels[session.role] || session.role}</span></div>
+        <div class="profile-row"><span class="k">User ID</span><span>#${session.userId}</span></div>
+      </div>
+
+      <button class="btn btn-outline" id="logout-btn" style="margin-top:8px;">Log out</button>
+    `;
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await api('/auth/logout', { method: 'POST' });
+      window.location.href = '/login.html';
+    });
+
+    renderNav('profile');
+  } catch (err) {
+    content.innerHTML = '<p style="color:var(--danger-text); margin-top:20px;">Please <a href="/login.html">log in</a> to view your profile.</p>';
+  }
+}
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="topbar">
+  <a href="javascript:history.back()">&larr;</a>
+  <span>Checkout</span>
+  <span></span>
+</div>
+<div class="container" style="max-width:420px;">
+  <div id="error-box" class="alert alert-error" style="display:none;"></div>
+
+  <div class="card" id="summary-card"></div>
+
+  <div class="field">
+    <label>Quantity</label>
+    <input type="number" id="quantity" value="1" min="1" max="10">
+  </div>
+
+  <div class="card" id="total-card" style="display:flex; justify-content:space-between; align-items:center;">
+    <span style="color:var(--sub);">Total</span>
+    <strong id="total-amount" style="color:var(--navy); font-size:18px;"></strong>
+  </div>
+
+  <h3>Payment method</h3>
+  <div style="display:flex; gap:10px; margin-bottom:16px;">
+    <div class="card pay-option selected" data-method="mpesa" style="flex:1; text-align:center; cursor:pointer;">M-Pesa</div>
+    <div class="card pay-option" data-method="card" style="flex:1; text-align:center; cursor:pointer; opacity:0.5;">Card (soon)</div>
+  </div>
+
+  <div class="field">
+    <label>M-Pesa phone number</label>
+    <input type="tel" id="phone" placeholder="07XX XXX XXX or 2547XX XXX XXX" required>
+  </div>
+
+  <button class="btn btn-primary" id="pay-btn">Pay now</button>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const categoryId = params.get('categoryId');
+const eventTitle = params.get('eventTitle');
+const catName = params.get('catName');
+const price = Number(params.get('price'));
+
+function updateTotal() {
+  const qty = Number(document.getElementById('quantity').value) || 1;
+  document.getElementById('total-amount').textContent = money(price * qty);
+}
+
+document.getElementById('summary-card').innerHTML = `
+  <strong>${eventTitle}</strong>
+  <div style="color:var(--sub); font-size:13px; margin-top:4px;">${catName} &middot; ${money(price)} each</div>
+`;
+document.getElementById('quantity').addEventListener('input', updateTotal);
+updateTotal();
+
+document.getElementById('pay-btn').addEventListener('click', async () => {
+  let phone = document.getElementById('phone').value.trim();
+  if (!phone) return showError('Enter your M-Pesa phone number.');
+
+  // Normalize to Safaricom's expected format: 2547XXXXXXXX
+  phone = phone.replace(/\s+/g, '');       // remove spaces
+  phone = phone.replace(/^\+/, '');         // strip a leading +
+  if (phone.startsWith('0')) {
+    phone = '254' + phone.slice(1);         // 07XXXXXXXX -> 2547XXXXXXXX
+  } else if (phone.startsWith('7') || phone.startsWith('1')) {
+    phone = '254' + phone;                  // 7XXXXXXXX -> 2547XXXXXXXX
+  }
+  // if it already starts with 254, leave it as-is
+
+  if (!/^254(7|1)\d{8}$/.test(phone)) {
+    return showError('Enter a valid Kenyan phone number, e.g. 0712345678.');
+  }
+
+  const btn = document.getElementById('pay-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending prompt...';
+
+  try {
+    const data = await api('/payments/checkout', {
+      method: 'POST',
+      body: JSON.stringify({
+        categoryId: Number(categoryId),
+        quantity: Number(document.getElementById('quantity').value),
+        phoneNumber: phone,
+      }),
+    });
+    window.location.href = `/payment-pending.html?transactionId=${data.transactionId}`;
+  } catch (err) {
+    showError(err.message);
+    btn.disabled = false;
+    btn.textContent = 'Pay now';
+  }
+});
+</script>
+</body>
+</html>
