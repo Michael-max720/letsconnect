@@ -49,21 +49,41 @@ document.getElementById('coverImageUrl').addEventListener('input', (e) => {
   }
 });
 
+const params = new URLSearchParams(window.location.search);
+const editingEventId = params.get('eventId');
+
+if (editingEventId) {
+  document.querySelector('button[type="submit"]').textContent = 'Save changes';
+  api('/events/' + editingEventId).then(({ event }) => {
+    document.getElementById('title').value = event.title;
+    document.getElementById('category').value = event.category || 'Music';
+    document.getElementById('description').value = event.description || '';
+    document.getElementById('venue').value = event.venue || '';
+    document.getElementById('coverImageUrl').value = event.cover_image_url || '';
+    document.getElementById('eventDate').value = event.event_date.slice(0, 16);
+    if (event.cover_image_url) {
+      document.getElementById('coverImageUrl').dispatchEvent(new Event('input'));
+    }
+  });
+}
 document.getElementById('event-form').addEventListener('submit', async (e) => {
   e.preventDefault();
+  const payload = {
+    title: document.getElementById('title').value,
+    category: document.getElementById('category').value,
+    description: document.getElementById('description').value,
+    venue: document.getElementById('venue').value,
+    eventDate: document.getElementById('eventDate').value.replace('T', ' ') + ':00',
+    coverImageUrl: document.getElementById('coverImageUrl').value.trim() || null,
+  };
   try {
-    const data = await api('/events', {
-      method: 'POST',
-      body: JSON.stringify({
-        title: document.getElementById('title').value,
-        category: document.getElementById('category').value,
-        description: document.getElementById('description').value,
-        venue: document.getElementById('venue').value,
-        eventDate: document.getElementById('eventDate').value.replace('T', ' ') + ':00',
-        coverImageUrl: document.getElementById('coverImageUrl').value.trim() || null,
-      }),
-    });
-    window.location.href = '/organiser-create-ticket.html?eventId=' + data.eventId;
+    if (editingEventId) {
+      await api('/events/' + editingEventId, { method: 'PUT', body: JSON.stringify(payload) });
+      window.location.href = '/organiser-dashboard.html';
+    } else {
+      const data = await api('/events', { method: 'POST', body: JSON.stringify(payload) });
+      window.location.href = '/organiser-create-ticket.html?eventId=' + data.eventId;
+    }
   } catch (err) {
     showError(err.message);
   }

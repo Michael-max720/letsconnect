@@ -28,5 +28,19 @@ async function listCategoriesForEvent(req, res) {
   const categories = await ticketCategoryModel.findCategoriesByEvent(req.params.eventId);
   res.json({ categories });
 }
+async function editCategory(req, res) {
+  const category = await ticketCategoryModel.findCategoryById(req.params.categoryId);
+  if (!category) return res.status(404).json({ error: 'Ticket category not found.' });
 
-module.exports = { createCategory, listCategoriesForEvent };
+  const event = await eventModel.findEventById(category.event_id);
+  if (event.organiser_id !== req.session.userId) {
+    return res.status(403).json({ error: 'You do not own this event.' });
+  }
+
+  const { name, price, quota, salesStart, salesEnd } = req.body;
+  await ticketCategoryModel.updateCategory(req.params.categoryId, { name, price, quota, salesStart, salesEnd });
+
+  res.json({ message: 'Ticket category updated.' });
+}
+
+module.exports = { createCategory, listCategoriesForEvent, editCategory };

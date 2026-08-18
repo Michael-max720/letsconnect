@@ -25,5 +25,12 @@ async function findCategoryById(categoryId) {
   );
   return rows[0] || null;
 }
+async function updateCategory(categoryId, { name, price, quota, salesStart, salesEnd }) {
+  await pool.query(
+    `UPDATE ticket_categories SET name = ?, price = ?, quota = ?, sales_start = ?, sales_end = ?
+     WHERE category_id = ?`,
+    [name, price, quota, salesStart || null, salesEnd || null, categoryId]
+  );
+}
 
-module.exports = { createCategory, findCategoriesByEvent, findCategoryById };
+module.exports = { createCategory, findCategoriesByEvent, findCategoryById, updateCategory };

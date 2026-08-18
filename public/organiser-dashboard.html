@@ -37,13 +37,27 @@ async function load() {
       list.innerHTML = '<p style="color:var(--sub);">No events yet.</p>';
       return;
     }
-    list.innerHTML = events.map(ev => `
-      <div class="card" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;"
-           onclick="location.href='/organiser-create-ticket.html?eventId=${ev.event_id}'">
-        <span>${ev.title}</span>
-        ${statusBadge[ev.status] || ''}
+  list.innerHTML = events.map(ev => {
+  const thumbStyle = ev.cover_image_url
+    ? `background-image:url('${ev.cover_image_url}'); background-size:cover; background-position:center;`
+    : '';
+  const date = new Date(ev.event_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  return `
+    <div class="card" style="padding:0; overflow:hidden;">
+<div class="event-thumb" style="height:220px; ${thumbStyle}"></div>
+      <div style="padding:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <strong>${ev.title}</strong>
+            <div style="font-size:12px; color:var(--sub); margin-top:4px;">${date} &middot; ${ev.venue || ''}</div>
+          </div>
+          ${statusBadge[ev.status] || ''}
+        </div>
+        <a href="/organiser-create-ticket.html?eventId=${ev.event_id}" style="display:block; font-size:12px; color:var(--navy); font-weight:600; margin-top:10px;">Edit event</a>
       </div>
-    `).join('');
+    </div>
+  `;
+}).join('');
   } catch (err) {
     document.getElementById('event-list').innerHTML = '<p style="color:var(--danger-text);">Please log in as an organiser.</p>';
   }

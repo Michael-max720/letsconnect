@@ -6,5 +6,5 @@ const { requireAuth, requireRole } = require('../middleware/auth.middleware');
 
 router.post('/', requireAuth, requireRole('organiser'), ticketCategoryController.createCategory);
 router.get('/event/:eventId', ticketCategoryController.listCategoriesForEvent);
-
+router.put('/:categoryId', requireAuth, requireRole('organiser'), ticketCategoryController.editCategory);
 module.exports = router;

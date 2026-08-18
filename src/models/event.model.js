@@ -46,5 +46,12 @@ async function findPublishedEvents({ search, category } = {}) {
   const [rows] = await pool.query(query, params);
   return rows;
 }
+async function updateEvent(eventId, { title, description, category, venue, eventDate, coverImageUrl }) {
+  await pool.query(
+    `UPDATE events SET title = ?, description = ?, category = ?, venue = ?, event_date = ?, cover_image_url = ?
+     WHERE event_id = ?`,
+    [title, description, category, venue, eventDate, coverImageUrl, eventId]
+  );
+}
 
-module.exports = { createEvent, findEventsByOrganiser, findEventById, publishEvent, findPublishedEvents };
+module.exports = { createEvent, findEventsByOrganiser, findEventById, publishEvent, findPublishedEvents, updateEvent };

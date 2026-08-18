@@ -59,5 +59,18 @@ async function getEventWithTickets(req, res) {
 
   res.json({ event, ticketCategories: categories });
 }
+async function editEvent(req, res) {
+  const event = await eventModel.findEventById(req.params.eventId);
+  if (!event) return res.status(404).json({ error: 'Event not found.' });
 
-module.exports = { createEvent, listMyEvents, getEvent, publishEvent, browseEvents, getEventWithTickets };
+  if (event.organiser_id !== req.session.userId) {
+    return res.status(403).json({ error: 'You do not own this event.' });
+  }
+
+  const { title, description, category, venue, eventDate, coverImageUrl } = req.body;
+  await eventModel.updateEvent(req.params.eventId, { title, description, category, venue, eventDate, coverImageUrl });
+
+  res.json({ message: 'Event updated.' });
+}
+
+module.exports = { createEvent, listMyEvents, getEvent, publishEvent, browseEvents, getEventWithTickets, editEvent };
