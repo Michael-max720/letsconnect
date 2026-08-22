@@ -39,8 +39,8 @@ async function load() {
     }
   list.innerHTML = events.map(ev => {
   const thumbStyle = ev.cover_image_url
-    ? `background-image:url('${ev.cover_image_url}'); background-size:cover; background-position:center;`
-    : '';
+  ? `background-image:url('${ev.cover_image_url}'); background-size:cover; background-position:center;`
+  : '';
   const date = new Date(ev.event_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   return `
     <div class="card" style="padding:0; overflow:hidden;">

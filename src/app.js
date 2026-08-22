@@ -41,4 +41,5 @@ app.use('/api/payments', require('./routes/payment.routes'));
 app.use('/api/tickets', require('./routes/ticket.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
 app.use('/api/gate', require('./routes/scan.routes'));
+app.use('/api/gate-assignments', require('./routes/gateAssignment.routes'));
 module.exports = app;

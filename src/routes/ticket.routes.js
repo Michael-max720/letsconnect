@@ -6,5 +6,6 @@ const { requireAuth } = require('../middleware/auth.middleware');
 
 router.get('/mine', requireAuth, ticketController.getMyTickets);
 router.get('/:ticketId', requireAuth, ticketController.getTicket);
+router.get('/verify/:qrToken', requireAuth, ticketController.verifyTicket);
 
 module.exports = router;

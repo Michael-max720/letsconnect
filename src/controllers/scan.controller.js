@@ -1,6 +1,7 @@
 // src/controllers/scan.controller.js
 const ticketModel = require('../models/ticket.model');
 const scanLogModel = require('../models/scanLog.model');
+const gateAssignmentModel = require('../models/gateAssignment.model');
 
 async function scanTicket(req, res) {
   const { qrToken } = req.body;
@@ -17,6 +18,17 @@ async function scanTicket(req, res) {
     });
     return res.status(404).json({ result: 'invalid', message: 'This ticket is not recognised.' });
   }
+
+  // NEW: reject if this agent has no active assignment for this ticket's event
+const authorized = await gateAssignmentModel.isAgentActiveForEvent(req.session.userId, ticket.event_id);
+if (!authorized) {
+  await scanLogModel.recordScan({
+    ticketId: ticket.ticket_id,
+    gateAgentId: req.session.userId,
+    result: 'invalid',
+  });
+  return res.status(403).json({ result: 'invalid', message: 'You are not assigned to this event.' });
+}
 
   // case 2: ticket exists but was already scanned in
   if (ticket.status === 'used') {
