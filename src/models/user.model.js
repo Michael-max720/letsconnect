@@ -47,6 +47,20 @@ async function verifyOtpAndActivate(userId) {
 async function comparePassword(plainPassword, passwordHash) {
   return bcrypt.compare(plainPassword, passwordHash);
 }
+async function setResetToken(userId, code, expiresAt) {
+  await pool.query(
+    'UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE user_id = ?',
+    [code, expiresAt, userId]
+  );
+}
+
+async function resetPassword(userId, newPassword) {
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await pool.query(
+    'UPDATE users SET password_hash = ?, otp_code = NULL, otp_expires_at = NULL WHERE user_id = ?',
+    [passwordHash, userId]
+  );
+}
 
 module.exports = {
   createUser,
@@ -55,4 +69,6 @@ module.exports = {
   setOtp,
   verifyOtpAndActivate,
   comparePassword,
+  setResetToken,
+  resetPassword,
 };

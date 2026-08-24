@@ -59,11 +59,19 @@ body {
   background: var(--field-bg);
   font-size: 15px;
   font-family: inherit;
+  color: var(--ink);
+  min-height: 44px;
 }
 .field input:focus, .field select:focus, .field textarea:focus {
   outline: none;
   border-color: var(--navy);
   background: white;
+}
+.field select {
+  appearance: auto;
+  -webkit-appearance: menulist;
+  height: 44px;
+  line-height: 44px;
 }
 
 /* --- buttons --- */

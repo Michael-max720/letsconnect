@@ -10,4 +10,6 @@ router.post('/logout', authController.logout);
 router.post('/resend-otp', authController.resendOtp);
 router.get('/me', authController.getCurrentUser);
 router.post('/resend-otp', authController.resendOtp);
+router.post('/request-reset', authController.requestPasswordReset);
+router.post('/confirm-reset', authController.confirmPasswordReset);
 module.exports = router;

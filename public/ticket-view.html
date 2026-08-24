@@ -47,10 +47,17 @@ content.innerHTML = `
       <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--sub);">Status</span><strong style="text-transform:capitalize;">${ticket.status}</strong></div>
     </div>
   </div>
+    <button class="btn btn-outline" id="verify-btn" style="margin-top:12px;">Verify this ticket is genuine</button>
+  <p id="verify-result" style="text-align:center; margin-top:10px; font-weight:600;"></p>
 `;
   } catch (err) {
     content.innerHTML = '<p style="color:var(--danger-text);">Could not load this ticket.</p>';
   }
+  document.getElementById('verify-btn').addEventListener('click', async () => {
+  const { valid, status } = await api('/tickets/verify/' + ticket.qr_code_token);
+  document.getElementById('verify-result').textContent = valid
+    ? `\u2713 Genuine ticket \u2014 status: ${status}` : '\u2717 Not recognised';
+});
 }
 load();
 </script>

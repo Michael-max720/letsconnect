@@ -13,6 +13,9 @@
   <div class="stat-grid" id="stats"></div>
   <h3>Needs attention</h3>
   <div id="pending-list">Loading...</div>
+  <div id="pending-list">Loading...</div>
+<h3 style="margin-top:24px;">Gate Agent assignments</h3>
+<div id="pending-assignments">Loading...</div>
 </div>
 
 <script src="/js/api.js"></script>
@@ -46,6 +49,23 @@ async function loadPending() {
     </div>
   `).join('');
 }
+async function loadPendingAssignments() {
+  const { pending } = await api('/gate-assignments/pending');
+  document.getElementById('pending-assignments').innerHTML = pending.map(p => `
+    <div class="card">
+      <strong>${p.agent_name}</strong> &rarr; ${p.event_title}
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="btn btn-outline" onclick="decideAssignment(${p.assignment_id}, 'reject')">Reject</button>
+        <button class="btn btn-primary" onclick="decideAssignment(${p.assignment_id}, 'approve')">Approve</button>
+      </div>
+    </div>
+  `).join('');
+}
+async function decideAssignment(id, action) {
+  await api(`/gate-assignments/${id}/${action}`, { method: 'PATCH' });
+  loadPendingAssignments();
+}
+loadPendingAssignments();
 
 async function decide(userId, action) {
   try {
@@ -63,7 +83,26 @@ loadStats().catch(() => {
 loadPending().catch(() => {
   document.getElementById('pending-list').innerHTML = '';
 });
+loadPendingAssignments().catch(() => {
+  document.getElementById('pending-assignments').innerHTML = '';
+});
 renderNav('home');
+async function loadPendingAssignments() {
+  const { pending } = await api('/gate-assignments/pending');
+  document.getElementById('pending-assignments').innerHTML = pending.map(p => `
+    <div class="card">
+      <strong>${p.agent_name}</strong> &rarr; ${p.event_title}
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="btn btn-outline" onclick="decideAssignment(${p.assignment_id}, 'reject')">Reject</button>
+        <button class="btn btn-primary" onclick="decideAssignment(${p.assignment_id}, 'approve')">Approve</button>
+      </div>
+    </div>
+  `).join('');
+}
+async function decideAssignment(id, action) {
+  await api(`/gate-assignments/${id}/${action}`, { method: 'PATCH' });
+  loadPendingAssignments();
+}
 </script>
 </body>
 </html>

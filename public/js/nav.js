@@ -9,10 +9,12 @@ const NAV_TABS = {
     { key: 'tickets', label: 'Tickets', href: '/my-tickets.html' },
     { key: 'profile', label: 'Profile', href: '/profile.html' },
   ],
-  organiser: [
-    { key: 'home', label: 'Dashboard', href: '/organiser-dashboard.html' },
-    { key: 'profile', label: 'Profile', href: '/profile.html' },
-  ],
+ organiser: [
+  { key: 'home', label: 'Dashboard', href: '/organiser-dashboard.html' },
+  { key: 'agents', label: 'Agents', href: '/organiser-agents.html' },
+  { key: 'reports', label: 'Reports', href: '/organiser-reports.html' },
+  { key: 'profile', label: 'Profile', href: '/profile.html' },
+], 
   admin: [
     { key: 'home', label: 'Dashboard', href: '/admin-dashboard.html' },
     { key: 'profile', label: 'Profile', href: '/profile.html' },

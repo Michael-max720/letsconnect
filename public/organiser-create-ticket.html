@@ -25,6 +25,13 @@
     <div class="field"><label>Quota</label><input type="number" id="quota" min="1" required></div>
     <button type="submit" class="btn btn-outline">+ Add category</button>
   </form>
+  <div class="card">
+  <strong>Invite a Gate Agent</strong>
+  <div class="field" style="margin-top:10px;">
+    <input type="email" id="agentEmail" placeholder="agent@example.com">
+  </div>
+  <button class="btn btn-outline" id="invite-btn">Send invite</button>
+</div>
 
   <button class="btn btn-primary" id="publish-btn" style="margin-top:20px;">Publish event</button>
 </div>
@@ -91,6 +98,15 @@ document.getElementById('publish-btn').addEventListener('click', async () => {
   } catch (err) {
     showError(err.message);
   }
+});
+document.getElementById('invite-btn').addEventListener('click', async () => {
+  try {
+    await api('/gate-assignments/invite', {
+      method: 'POST',
+      body: JSON.stringify({ eventId: Number(eventId), gateAgentEmail: document.getElementById('agentEmail').value }),
+    });
+    alert('Invitation sent — awaiting admin approval.');
+  } catch (err) { showError(err.message); }
 });
 
 loadCategories();

@@ -10,6 +10,10 @@
 <div class="topbar">Scan ticket</div>
 <div id="app-nav"></div>
 <div class="container" style="max-width:420px;">
+  <div class="card" id="my-events-card">
+  <strong>You're checking in guests for:</strong>
+  <div id="my-events-list" style="margin-top:8px;"></div>
+</div>
   <div class="field">
     <label>Ticket QR token</label>
     <input type="text" id="qrToken" placeholder="Paste or type the ticket's QR token">
@@ -57,6 +61,16 @@ async function loadHistory() {
     `).join('');
   } catch (err) { /* not logged in yet */ }
 }
+async function loadMyEvents() {
+  const { events } = await api('/gate-assignments/mine');
+  const list = document.getElementById('my-events-list');
+  if (events.length === 0) {
+    list.innerHTML = '<span style="color:var(--sub); font-size:13px;">No events assigned yet. Contact your organiser.</span>';
+  } else {
+    list.innerHTML = events.map(e => `<span class="badge badge-info" style="margin:2px;">${e.title}</span>`).join('');
+  }
+}
+loadMyEvents();
 
 document.getElementById('scan-btn').addEventListener('click', scan);
 loadHistory();
