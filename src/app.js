@@ -2,6 +2,7 @@
 // This file wires up middleware and routes. src/server.js is what actually
 // starts listening — kept separate so the app itself is easy to test later.
 const express = require('express');
+require('express-async-errors'); // lets Express catch errors thrown in async routes
 const path = require('path');
 const session = require('express-session');
 
@@ -43,4 +44,10 @@ app.use('/api/admin', require('./routes/admin.routes'));
 app.use('/api/gate', require('./routes/scan.routes'));
 app.use('/api/gate-assignments', require('./routes/gateAssignment.routes'));
 app.use('/api/organiser', require('./routes/organiserAgent.routes'));
+app.listen(3000, '0.0.0.0', () => console.log('Running on 3000'));
+// Any error inside a route is logged and returned as JSON instead of crashing the server
+app.use((err, req, res, next) => {
+  console.error('ERROR on', req.method, req.originalUrl, '->', err.message);
+  res.status(500).json({ error: 'Server error: ' + err.message });
+});
 module.exports = app;

@@ -3,7 +3,9 @@ const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
+  port: Number(process.env.SMTP_PORT),
+  secure: false,
+  requireTLS: true,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
@@ -24,5 +26,18 @@ async function sendTicketConfirmation({ toEmail, eventTitle, eventDate, venue, t
     `,
   });
 }
+async function sendOtpEmail({ toEmail, code }) {
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: toEmail,
+    subject: 'Your Lets Connect verification code',
+    html: `
+      <h2>Verify your account</h2>
+      <p>Your 6-digit verification code is:</p>
+      <p style="font-size:28px; font-weight:bold; letter-spacing:4px;">${code}</p>
+      <p>This code expires in 10 minutes.</p>
+    `,
+  });
+}
 
-module.exports = { sendTicketConfirmation };
+module.exports = { sendTicketConfirmation, sendOtpEmail };

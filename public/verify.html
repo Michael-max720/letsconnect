@@ -29,6 +29,7 @@
 <script>
 const params = new URLSearchParams(window.location.search);
 const userId = params.get('userId');
+   const nextQuery = params.get('next') ? '?next=' + encodeURIComponent(params.get('next')) : '';
 let secondsLeft = 60;
 let timerInterval;
 
@@ -71,10 +72,10 @@ document.getElementById('verify-form').addEventListener('submit', async (e) => {
     });
     if (data.status === 'pending_approval') {
       alert('Account verified. Your account is now awaiting admin approval before you can log in.');
-      window.location.href = '/login.html';
+         window.location.href = '/login.html' + nextQuery;
     } else {
       alert('Account verified. You can now log in.');
-      window.location.href = '/login.html';
+         window.location.href = '/login.html' + nextQuery;
     }
   } catch (err) {
     showError(err.message);

@@ -25,3 +25,13 @@ function showError(message, containerId = 'error-box') {
 function money(amount) {
   return 'KES ' + Number(amount).toLocaleString();
 }
+
+// Makes user-entered text safe to place inside innerHTML.
+function esc(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}

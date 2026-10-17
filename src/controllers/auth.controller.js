@@ -3,20 +3,41 @@ const userModel = require('../models/user.model');
 const { generateOtp } = require('../utils/otp.util');
 
 async function register(req, res) {
-  const { name, email, phone, password, role } = req.body;
+  const { name, password, role } = req.body;
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const phone = String(req.body.phone || '').replace(/[\s-]/g, '');
+  const username = String(req.body.username || '').trim();
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Name, email and password are required.' });
+  if (!name || !email || !phone || !password) {
+    return res.status(400).json({ error: 'Name, email, phone number and password are required.' });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Please enter a valid email address.' });
+  }
+  if (!/^(\+?254|0)?[17]\d{8}$/.test(phone)) {
+    return res.status(400).json({ error: 'Please enter a valid Kenyan phone number, e.g. 0712 345 678.' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  }
+  if (username && !/^[A-Za-z0-9_]{3,20}$/.test(username)) {
+    return res.status(400).json({ error: 'Username must be 3-20 letters, numbers or underscores.' });
   }
 
   const existing = await userModel.findByEmail(email);
   if (existing) {
     return res.status(409).json({ error: 'An account with that email already exists.' });
   }
+  if (username && await userModel.findByUsername(username)) {
+    return res.status(409).json({ error: 'That username is already taken.' });
+  }
 
-  // role defaults to 'attendee' if the request didn't specify one
+  // Public sign-up may only create attendee or organiser accounts.
+  // (Admins are created by hand; gate agents are created by organisers.)
+  const safeRole = ['attendee', 'organiser'].includes(role) ? role : 'attendee';
+
   const userId = await userModel.createUser({
-    name, email, phone, password, role: role || 'attendee',
+    name, username, email, phone, password, role: safeRole,
   });
 
   const { code, expiresAt } = generateOtp();
@@ -85,7 +106,13 @@ async function resendOtp(req, res) {
   const { code, expiresAt } = generateOtp();
   await userModel.setOtp(userId, code, expiresAt);
 
-  console.log(`[DEV ONLY] OTP for ${user.email}: ${code}`);
+  const { sendOtpEmail } = require('../utils/email.util');
+  try {
+    await sendOtpEmail({ toEmail: user.email, code });
+  } catch (emailErr) {
+    console.error('OTP email failed to send:', emailErr.message);
+    console.log(`[DEV ONLY fallback] OTP for ${user.email}: ${code}`);
+  }
 
   res.json({ message: 'A new code has been sent.' });
 }
@@ -93,7 +120,7 @@ async function getCurrentUser(req, res) {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const user = await userModel.findById(req.session.userId);
   if (!user) return res.status(401).json({ error: 'Not logged in.' });
-  res.json({ userId: user.user_id, name: user.name, email: user.email, role: user.role });
+    res.json({ userId: user.user_id, name: user.name, username: user.username, email: user.email, role: user.role });
 }
 async function requestPasswordReset(req, res) {
   const { email } = req.body;

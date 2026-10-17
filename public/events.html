@@ -5,15 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Discover events - Lets Connect</title>
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/settings.js"></script>
 </head>
 <body>
 <div class="topbar">Discover events</div>
 <div id="app-nav"></div>
 <div class="container">
- <p id="welcome-msg" style="display:inline-block; background:rgba(255,255,255,0.85); backdrop-filter:blur(6px); color:var(--ink); font-size:14px; font-weight:600; margin:16px 0 0; padding:8px 16px; border-radius:20px; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></p>
-  <div class="field" style="margin-top:16px;">
-    <input type="text" id="search" placeholder="Search events, venues...">
-  </div>
+  <p id="welcome-msg" class="welcome-pill" hidden></p>
+
+  <section class="frosted-panel search-panel" aria-label="Find events">
+    <form id="search-form" class="search-box" role="search">
+      <div class="field">
+        <label for="search-name">Event name</label>
+        <input type="search" id="search-name" placeholder="e.g. Safari Sevens" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="search-loc">Location or region</label>
+        <input type="search" id="search-loc" placeholder="e.g. Nairobi, Diani" list="region-list" autocomplete="off">
+        <datalist id="region-list">
+          <option value="Nairobi"><option value="Mombasa"><option value="Kisumu"><option value="Nakuru">
+          <option value="Eldoret"><option value="Nyeri"><option value="Naivasha"><option value="Diani">
+          <option value="Malindi"><option value="Maasai Mara"><option value="Thika"><option value="Machakos">
+        </datalist>
+      </div>
+    </form>
+
+    <div class="results-bar">
+      <span id="result-count" aria-live="polite"></span>
+      <button type="button" class="link-btn" id="clear-filters" hidden>Clear search</button>
+    </div>
+  </section>
 
   <div id="event-grid" class="event-grid"></div>
 </div>
@@ -23,14 +44,12 @@
 <script src="/js/bg-rotator.js"></script>
 <script>
 startBackgroundRotator([
-  'https://www.pexels.com/photo/a-person-walking-while-carrying-a-backpack-10521177/',
   'https://images.pexels.com/photos/20179680/pexels-photo-20179680.jpeg',
   'https://images.pexels.com/photos/30174882/pexels-photo-30174882.jpeg',
-  'https://images.unsplash.com/photo-1573152958734-1922c188fba3?q=80&w=1032&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=1007&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  'https://images.unsplash.com/photo-1573152958734-1922c188fba3?q=80&w=1032&auto=format&fit=crop',
+  'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=1007&auto=format&fit=crop',
   'https://images.pexels.com/photos/4555454/pexels-photo-4555454.jpeg',
-  'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://unsplash.com/photos/man-playing-drums-PKmjFH8dGMU'
+  'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=870&auto=format&fit=crop'
 ]);
 </script>
 <script>
@@ -45,48 +64,90 @@ function colorFor(cat) {
   return categoryColors[cat] || { bg: '#EAF1FB', text: '#1F3864' };
 }
 
-async function loadEvents(search = '') {
-  const grid = document.getElementById('event-grid');
+// Makes user-entered text safe to place inside innerHTML
+function safe(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+const nameInput = document.getElementById('search-name');
+const locInput = document.getElementById('search-loc');
+const grid = document.getElementById('event-grid');
+const countEl = document.getElementById('result-count');
+const clearBtn = document.getElementById('clear-filters');
+
+let requestId = 0;
+let timer;
+
+async function loadEvents() {
+  const myRequest = ++requestId; // ignore slow answers that arrive out of order
+  const qs = new URLSearchParams();
+  const name = nameInput.value.trim();
+  const loc = locInput.value.trim();
+  if (name) qs.set('search', name);
+  if (loc) qs.set('location', loc);
+
+  const hasSearch = qs.toString() !== '';
+  clearBtn.hidden = !hasSearch;
+  countEl.textContent = 'Loading events…';
+
   try {
-    const query = search ? '?search=' + encodeURIComponent(search) : '';
-    const { events } = await api('/events' + query);
+    const { events } = await api('/events' + (hasSearch ? '?' + qs : ''));
+    if (myRequest !== requestId) return;
+
+    countEl.textContent = events.length === 1 ? '1 event found' : events.length + ' events found';
     if (events.length === 0) {
-      grid.innerHTML = '<p style="grid-column:1/-1; color:var(--sub);">No events found.</p>';
+      grid.innerHTML = '<p class="empty">No events match your search. Try a different name or location.</p>';
       return;
     }
     grid.innerHTML = events.map((ev, i) => {
       const col = colorFor(ev.category);
       const date = new Date(ev.event_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
       const thumbStyle = ev.cover_image_url
-        ? `background-image:url('${ev.cover_image_url}'); background-size:cover; background-position:center; animation:none;`
+        ? `background-image:url('${safe(ev.cover_image_url)}'); background-size:cover; background-position:center; animation:none;`
         : '';
       return `
-        <div class="event-card" style="animation-delay:${i * 0.06}s" onclick="location.href='/event-details.html?id=${ev.event_id}'">
+        <a class="event-card" href="/event-details.html?id=${ev.event_id}" style="animation-delay:${i * 0.06}s">
           <div class="event-thumb" style="${thumbStyle}">
-            <span class="category-pill" style="background:${col.bg};color:${col.text};">${ev.category || 'Event'}</span>
+            <span class="category-pill" style="background:${col.bg};color:${col.text};">${safe(ev.category || 'Event')}</span>
           </div>
           <div class="body">
-            <p class="title">${ev.title}</p>
-            <p class="meta">${date} &middot; ${ev.venue || ''}</p>
+            <p class="title">${safe(ev.title)}</p>
+            <p class="meta">${date} &middot; ${safe(ev.venue || '')}</p>
           </div>
-        </div>`;
+        </a>`;
     }).join('');
   } catch (err) {
-    grid.innerHTML = '<p style="grid-column:1/-1; color:var(--danger-text);">Could not load events.</p>';
+    if (myRequest !== requestId) return;
+    console.error(err);
+    countEl.textContent = '';
+    grid.innerHTML = '<p class="empty" style="color:var(--danger-text);">Could not load events: ' + safe(err.message) + '</p>';
   }
 }
 
-document.getElementById('search').addEventListener('input', (e) => {
-  loadEvents(e.target.value);
+function debouncedLoad() {
+  clearTimeout(timer);
+  timer = setTimeout(loadEvents, 300); // wait until the user pauses typing
+}
+nameInput.addEventListener('input', debouncedLoad);
+locInput.addEventListener('input', debouncedLoad);
+document.getElementById('search-form').addEventListener('submit', (e) => { e.preventDefault(); loadEvents(); });
+
+clearBtn.addEventListener('click', () => {
+  nameInput.value = '';
+  locInput.value = '';
+  loadEvents();
 });
 
 loadEvents();
 renderNav('home').then(session => {
   if (session) {
-    document.getElementById('welcome-msg').textContent = 'Welcome, ' + session.name.split(' ')[0];
+    const w = document.getElementById('welcome-msg');
+    w.textContent = 'Welcome, ' + session.name.split(' ')[0];
+    w.hidden = false;
   }
 });
 </script>
 </body>
-</html>
 </html>

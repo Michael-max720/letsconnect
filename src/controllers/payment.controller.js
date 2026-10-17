@@ -3,6 +3,7 @@ const ticketCategoryModel = require('../models/ticketCategory.model');
 const ticketModel = require('../models/ticket.model');
 const transactionModel = require('../models/transaction.model');
 const mpesaUtil = require('../utils/mpesa.util');
+const eventModel = require('../models/event.model');
 
 async function initiateCheckout(req, res) {
   const { categoryId, quantity, phoneNumber } = req.body;
@@ -10,11 +11,27 @@ async function initiateCheckout(req, res) {
   if (!categoryId || !quantity || !phoneNumber) {
     return res.status(400).json({ error: 'categoryId, quantity and phoneNumber are required.' });
   }
-
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10) {
+    return res.status(400).json({ error: 'Quantity must be a whole number between 1 and 10.' });
+  }
   // 1. Look up the real category — never trust a price from the client
   const category = await ticketCategoryModel.findCategoryById(categoryId);
   if (!category) return res.status(404).json({ error: 'Ticket category not found.' });
-
+    // 1b. Only sell for published events that are currently on sale
+  const event = await eventModel.findEventById(category.event_id);
+  if (!event || event.status !== 'published') {
+    return res.status(409).json({ error: 'This event is not available.' });
+  }
+  if (new Date(event.event_date) < new Date()) {
+    return res.status(409).json({ error: 'This event has already taken place.' });
+  }
+  const now = new Date();
+  if (category.sales_start && new Date(category.sales_start) > now) {
+    return res.status(409).json({ error: 'Ticket sales for this category have not started yet.' });
+  }
+  if (category.sales_end && new Date(category.sales_end) < now) {
+    return res.status(409).json({ error: 'Ticket sales for this category have ended.' });
+  }
   // 2. Enforce quota — FR-3.3
   const sold = await ticketModel.countSoldForCategory(categoryId);
   if (sold + quantity > category.quota) {

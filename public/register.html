@@ -5,72 +5,136 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign up - Lets Connect</title>
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/settings.js"></script>
 </head>
 <body>
-<div class="topbar">Lets Connect</div>
-<div class="container" style="max-width:420px;">
-<div class="frosted-panel" style="margin-top:24px;"></div>
-  <h2 style="margin-top:24px;">Create account</h2>
-  <div id="error-box" class="alert alert-error" style="display:none;"></div>
+<div class="topbar">
+  <a href="/events.html" aria-label="Back to events">&larr;</a>
+  <span>Lets Connect</span>
+  <span></span>
+</div>
+<div class="container" style="max-width:440px;" id="main">
+  <div class="frosted-panel" style="margin-top:24px;">
+    <h1 style="margin:0 0 4px; font-size:1.5rem;">Create your account</h1>
+    <p style="margin:0 0 16px; color:var(--sub);">Already registered? <a href="/login.html" id="login-link" style="color:var(--navy); font-weight:700;">Log in</a></p>
 
-  <form id="register-form">
-    <div class="field">
-      <label>Full name</label>
-      <input type="text" id="name" required>
-    </div>
-    <div class="field">
-      <label>Email address</label>
-      <input type="email" id="email" required>
-    </div>
-    <div class="field">
-      <label>Phone number</label>
-      <input type="tel" id="phone" placeholder="07XX XXX XXX" required>
-    </div>
-    <div class="field">
-      <label>I am registering as</label>
-      <select id="role">
-        <option value="attendee">Attendee</option>
-        <option value="organiser">Organiser</option>
-      </select>
-    </div>
-   <div class="field">
-  <label>Password</label>
-  <input type="password" id="password" required minlength="6">
-</div>
-<div class="field">
-  <label>Confirm password</label>
-  <input type="password" id="confirmPassword" required minlength="6">
-</div>
-    <button type="submit" class="btn btn-primary">Create account</button>
-    <a href="/login.html" class="btn-link">Already have an account? Log in</a>
-  </form>
-</div>
+    <div id="error-box" class="alert alert-error" style="display:none;" role="alert"></div>
+
+    <form id="register-form" novalidate>
+      <div class="setting" style="margin-bottom:12px;">
+        <span class="setting-label">I am signing up as</span>
+        <div class="seg" role="group" aria-label="Account type">
+          <button type="button" class="seg-btn on" data-role="attendee" aria-pressed="true">Attendee</button>
+          <button type="button" class="seg-btn" data-role="organiser" aria-pressed="false">Organiser</button>
+        </div>
+      </div>
+      <div id="role-note" class="alert alert-info" role="status"></div>
+
+      <div class="field">
+        <label for="name">Full name</label>
+        <input type="text" id="name" autocomplete="name" required>
+      </div>
+      <div class="field">
+        <label for="email">Email address</label>
+        <input type="email" id="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="phone">Phone number</label>
+        <input type="tel" id="phone" placeholder="0712 345 678" autocomplete="tel" required>
+      </div>
+      <div class="field">
+        <label for="username">Username <span style="font-weight:400;">(optional)</span></label>
+        <input type="text" id="username" autocomplete="username" maxlength="20">
+        <p class="field-hint">3-20 letters, numbers or underscores.</p>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="password" autocomplete="new-password" minlength="6" required>
+          <button type="button" class="pw-toggle" data-target="password">Show</button>
+        </div>
+        <p class="field-hint">At least 6 characters.</p>
+      </div>
+      <div class="field">
+        <label for="confirmPassword">Confirm password</label>
+        <div class="pw-wrap">
+          <input type="password" id="confirmPassword" autocomplete="new-password" minlength="6" required>
+          <button type="button" class="pw-toggle" data-target="confirmPassword">Show</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="submit-btn">Create account</button>
+    </form>
+  </div>
 </div>
 
 <script src="/js/api.js"></script>
 <script>
+// Where to go after signing up (only same-site paths are accepted)
+const rawNext = new URLSearchParams(window.location.search).get('next');
+const nextPath = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : null;
+const nextQuery = nextPath ? '?next=' + encodeURIComponent(nextPath) : '';
+document.getElementById('login-link').href = '/login.html' + nextQuery;
+
+// Account type choice + explanation
+let role = 'attendee';
+const NOTES = {
+  attendee: 'Buy tickets, save events and follow organisers. Your account is ready as soon as you verify your email.',
+  organiser: 'Organiser accounts are checked by an admin first. After you verify your email, you can log in once your account is approved.',
+};
+const roleNote = document.getElementById('role-note');
+roleNote.textContent = NOTES[role];
+document.querySelectorAll('[data-role]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    role = btn.dataset.role;
+    document.querySelectorAll('[data-role]').forEach((b) => {
+      const on = b === btn;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on);
+    });
+    roleNote.textContent = NOTES[role];
+    roleNote.className = 'alert ' + (role === 'organiser' ? 'alert-warn' : 'alert-info');
+  });
+});
+
+// Show / hide password
+document.querySelectorAll('.pw-toggle').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.target);
+    const hidden = input.type === 'password';
+    input.type = hidden ? 'text' : 'password';
+    btn.textContent = hidden ? 'Hide' : 'Show';
+  });
+});
+
 document.getElementById('register-form').addEventListener('submit', async (e) => {
   e.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.replace(/[\s-]/g, '');
+  const username = document.getElementById('username').value.trim();
   const password = document.getElementById('password').value;
   const confirmPassword = document.getElementById('confirmPassword').value;
-  if (password !== confirmPassword) {
-    return showError('Passwords do not match.');
-  }
+
+  if (!name || !email || !phone || !password) return showError('Please fill in all the required fields.');
+  if (!/^(\+?254|0)?[17]\d{8}$/.test(phone)) return showError('Please enter a valid Kenyan phone number, e.g. 0712 345 678.');
+  if (username && !/^[A-Za-z0-9_]{3,20}$/.test(username)) return showError('Username must be 3-20 letters, numbers or underscores.');
+  if (password.length < 6) return showError('Password must be at least 6 characters.');
+  if (password !== confirmPassword) return showError('Passwords do not match.');
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Creating account…';
   try {
     const data = await api('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({
-        name: document.getElementById('name').value,
-        email: document.getElementById('email').value,
-        phone: document.getElementById('phone').value,
-        role: document.getElementById('role').value,
-        password: document.getElementById('password').value,
-      }),
+      body: JSON.stringify({ name, email, phone, username, role, password }),
     });
-    // pass userId to the verify page via the URL
-    window.location.href = '/verify.html?userId=' + data.userId;
+    window.location.href = '/verify.html?userId=' + data.userId + (nextPath ? '&next=' + encodeURIComponent(nextPath) : '');
   } catch (err) {
     showError(err.message);
+    btn.disabled = false;
+    btn.textContent = 'Create account';
   }
 });
 </script>

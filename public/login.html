@@ -68,6 +68,11 @@ function togglePassword(fieldId, btn) {
     btn.textContent = 'Show';
   }
 }
+   function safeNext() {
+     const n = new URLSearchParams(window.location.search).get('next');
+     return n && n.startsWith('/') && !n.startsWith('//') ? n : null;
+   }
+   document.querySelector('a[href="/register.html"]').href = '/register.html' + window.location.search;
 
 document.getElementById('login-form').addEventListener('submit', async (e) => {
   e.preventDefault();

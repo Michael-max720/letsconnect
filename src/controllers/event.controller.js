@@ -45,8 +45,8 @@ async function publishEvent(req, res) {
 }
 
 async function browseEvents(req, res) {
-  const { search, category } = req.query;
-  const events = await eventModel.findPublishedEvents({ search, category });
+  const { search, location, category } = req.query;
+  const events = await eventModel.findPublishedEvents({ search, location, category });
   res.json({ events });
 }
 
