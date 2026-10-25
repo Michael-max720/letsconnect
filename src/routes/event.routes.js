@@ -8,9 +8,11 @@ const { requireAuth, requireRole } = require('../middleware/auth.middleware');
 
 router.post('/', requireAuth, requireRole('organiser'), upload.single('coverImage'), eventController.createEvent);
 router.get('/mine', requireAuth, requireRole('organiser'), eventController.listMyEvents);
+router.get('/highlights', eventController.highlights);   // must stay above '/:eventId'
 router.get('/', eventController.browseEvents);
 router.get('/:eventId/tickets', eventController.getEventWithTickets);
 router.get('/:eventId', eventController.getEvent);
 router.patch('/:eventId/publish', requireAuth, requireRole('organiser'), eventController.publishEvent);
+router.patch('/:eventId/cancel', requireAuth, requireRole('organiser'), eventController.cancelEvent);
 router.put('/:eventId', requireAuth, requireRole('organiser'), eventController.editEvent);
 module.exports = router;

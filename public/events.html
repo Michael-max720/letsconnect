@@ -5,23 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Discover events - Lets Connect</title>
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
 <script src="/js/settings.js"></script>
 </head>
 <body>
-<div class="topbar">Discover events</div>
+<div class="topbar"><span data-i18n="ev.discover">Discover events</span></div>
 <div id="app-nav"></div>
 <div class="container">
   <p id="welcome-msg" class="welcome-pill" hidden></p>
 
+  <!-- Sliding highlights: featured, trending and just-added events -->
+  <section id="highlights" class="highlights" hidden>
+    <h2 class="section-title" data-i18n="hl.title">Don't miss these</h2>
+    <div class="carousel" role="region" aria-roledescription="carousel" id="carousel">
+      <div class="slides" id="slides" tabindex="0"></div>
+      <div class="carousel-controls" id="carousel-controls">
+        <button type="button" class="car-btn" id="car-prev">&#8249;</button>
+        <div class="dots" id="dots"></div>
+        <button type="button" class="car-btn" id="car-next">&#8250;</button>
+      </div>
+    </div>
+  </section>
+
   <section class="frosted-panel search-panel" aria-label="Find events">
     <form id="search-form" class="search-box" role="search">
       <div class="field">
-        <label for="search-name">Event name</label>
-        <input type="search" id="search-name" placeholder="e.g. Safari Sevens" autocomplete="off">
+        <label for="search-name" data-i18n="ev.name">Event name</label>
+        <input type="search" id="search-name" data-i18n-placeholder="ev.namePh" placeholder="e.g. Safari Sevens" autocomplete="off">
       </div>
       <div class="field">
-        <label for="search-loc">Location or region</label>
-        <input type="search" id="search-loc" placeholder="e.g. Nairobi, Diani" list="region-list" autocomplete="off">
+        <label for="search-org" data-i18n="ev.organiser">Organiser</label>
+        <input type="search" id="search-org" data-i18n-placeholder="ev.organiserPh" placeholder="e.g. Nairobi Live Events" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="search-loc" data-i18n="ev.location">Location or region</label>
+        <input type="search" id="search-loc" data-i18n-placeholder="ev.locationPh" placeholder="e.g. Nairobi, Diani" list="region-list" autocomplete="off">
         <datalist id="region-list">
           <option value="Nairobi"><option value="Mombasa"><option value="Kisumu"><option value="Nakuru">
           <option value="Eldoret"><option value="Nyeri"><option value="Naivasha"><option value="Diani">
@@ -30,9 +48,14 @@
       </div>
     </form>
 
+    <div class="check-row" style="margin:8px 0 0;">
+      <input type="checkbox" id="hide-done">
+      <label for="hide-done" data-i18n="ev.hideDone">Hide closed, cancelled and sold-out events</label>
+    </div>
+
     <div class="results-bar">
       <span id="result-count" aria-live="polite"></span>
-      <button type="button" class="link-btn" id="clear-filters" hidden>Clear search</button>
+      <button type="button" class="link-btn" id="clear-filters" data-i18n="ev.clear" hidden>Clear search</button>
     </div>
   </section>
 
@@ -41,6 +64,8 @@
 
 <script src="/js/api.js"></script>
 <script src="/js/nav.js"></script>
+<script src="/js/footer.js"></script>
+<script src="/js/posters.js"></script>
 <script src="/js/bg-rotator.js"></script>
 <script>
 startBackgroundRotator([
@@ -53,26 +78,119 @@ startBackgroundRotator([
 ]);
 </script>
 <script>
-const categoryColors = {
-  'Music': { bg: '#F1EEFE', text: '#4A4099' },
-  'Safari': { bg: '#FDF0E6', text: '#8A4B22' },
-  'Conference': { bg: '#E9F6F0', text: '#146C4C' },
-  'Sports': { bg: '#FCEEF1', text: '#9C3B57' },
-  'Comedy': { bg: '#FCF3E3', text: '#8A5A0C' },
-};
-function colorFor(cat) {
-  return categoryColors[cat] || { bg: '#EAF1FB', text: '#1F3864' };
+// ---------- slides (highlights) ----------
+function slideHtml(ev, labelKind, n, total) {
+  const p = dateParts(ev);
+  const labelKey = { featured: 'hl.featured', trending: 'hl.trending', new: 'hl.new' }[labelKind];
+  const bg = ev.cover_image_url
+    ? `<div class="slide-bg" style="background-image:url('${safe(ev.cover_image_url)}')"></div>` : '';
+  const place = [ev.venue, ev.region].filter(Boolean).join(', ');
+  const ribbon = ev.sales_status === 'coming_soon'
+    ? `<span class="ribbon ribbon-coming_soon">${safe(t('st.comingSoon'))}</span>` : '';
+  return `
+    <a class="slide" role="group" aria-roledescription="slide"
+       aria-label="${safe(t('car.slide', { n, total }))}: ${safe(ev.title)}"
+       href="/event-details.html?id=${ev.event_id}">
+      ${bg}<div class="slide-shade"></div>
+      ${dateBadge(p)}
+      ${ribbon}
+      <div class="slide-body">
+        <span class="slide-label ${labelKind}">${safe(t(labelKey))}</span>
+        <h3>${safe(ev.title)}</h3>
+        <p>${p.dow} &middot; ${p.time} &middot; ${safe(place)}</p>
+        <div class="slide-meta">${stateLine(ev)}${tagsHtml(ev)}</div>
+        <span class="slide-cta">${safe(t('hl.view'))}</span>
+      </div>
+    </a>`;
 }
 
-// Makes user-entered text safe to place inside innerHTML
-function safe(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+// ---------- carousel behaviour ----------
+const slidesEl = document.getElementById('slides');
+const dotsEl = document.getElementById('dots');
+const prevBtn = document.getElementById('car-prev');
+const nextBtn = document.getElementById('car-next');
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let slideCount = 0;
+let playing = !reduceMotion;   // people who ask for less motion get no autoplay
+let hoverPaused = false;
+let autoTimer = null;
+
+function currentIndex() {
+  return Math.round(Math.abs(slidesEl.scrollLeft) / (slidesEl.clientWidth || 1));
+}
+function goTo(i) {
+  const dir = getComputedStyle(slidesEl).direction === 'rtl' ? -1 : 1;
+  slidesEl.scrollTo({ left: dir * i * slidesEl.clientWidth, behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+function updateDots() {
+  const idx = currentIndex();
+  dotsEl.querySelectorAll('.dot').forEach((d, i) => d.setAttribute('aria-current', i === idx ? 'true' : 'false'));
+}
+function startAuto() {
+  clearInterval(autoTimer);
+  autoTimer = setInterval(() => {
+    if (!playing || hoverPaused || document.hidden || slideCount < 2) return;
+    goTo((currentIndex() + 1) % slideCount);
+  }, 6000);
 }
 
+function setupCarousel(count) {
+  slideCount = count;
+  document.getElementById('carousel').setAttribute('aria-label', t('car.label'));
+  document.getElementById('carousel-controls').hidden = count < 2;
+  dotsEl.innerHTML = Array.from({ length: count }, (_, i) =>
+    `<button type="button" class="dot" data-i="${i}" aria-label="${safe(t('car.slide', { n: i + 1, total: count }))}"></button>`).join('');
+  prevBtn.setAttribute('aria-label', t('car.prev'));
+  nextBtn.setAttribute('aria-label', t('car.next'));
+  updateDots();
+  startAuto();
+}
+
+dotsEl.addEventListener('click', (e) => { const d = e.target.closest('.dot'); if (d) goTo(Number(d.dataset.i)); });
+prevBtn.addEventListener('click', () => goTo((currentIndex() - 1 + slideCount) % slideCount));
+nextBtn.addEventListener('click', () => goTo((currentIndex() + 1) % slideCount));
+slidesEl.addEventListener('scroll', () => { window.requestAnimationFrame(updateDots); });
+// Never move content while someone is reading it or using it with the keyboard
+const carouselEl = document.getElementById('carousel');
+['mouseenter', 'focusin', 'touchstart'].forEach((ev) => carouselEl.addEventListener(ev, () => { hoverPaused = true; }, { passive: true }));
+['mouseleave', 'focusout'].forEach((ev) => carouselEl.addEventListener(ev, () => { hoverPaused = false; }));
+slidesEl.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') { e.preventDefault(); goTo(Math.min(currentIndex() + 1, slideCount - 1)); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); goTo(Math.max(currentIndex() - 1, 0)); }
+});
+
+async function loadHighlights() {
+  const section = document.getElementById('highlights');
+  try {
+    const loc = locInput.value.trim();
+    const data = await api('/events/highlights' + (loc ? '?location=' + encodeURIComponent(loc) : ''));
+    // Featured first, then trending, then newest. Each event appears once.
+    const seen = new Set();
+    const picked = [];
+    [['featured', data.featured], ['trending', data.trending], ['new', data.recent]].forEach(([kind, list]) => {
+      (list || []).forEach((ev) => {
+        if (seen.has(ev.event_id) || picked.length >= 6) return;
+        seen.add(ev.event_id);
+        picked.push({ ev, kind });
+      });
+    });
+    if (picked.length === 0) { section.hidden = true; return; }
+    slidesEl.innerHTML = picked.map((x, i) => slideHtml(x.ev, x.kind, i + 1, picked.length)).join('');
+    section.hidden = false;
+    slidesEl.scrollLeft = 0;
+    setupCarousel(picked.length);
+  } catch (err) {
+    console.error('Highlights could not load:', err);
+    section.hidden = true;   // the slider is a bonus; the list below still works
+  }
+}
+
+// ---------- search + list ----------
 const nameInput = document.getElementById('search-name');
+const orgInput = document.getElementById('search-org');
 const locInput = document.getElementById('search-loc');
+const hideDone = document.getElementById('hide-done');
 const grid = document.getElementById('event-grid');
 const countEl = document.getElementById('result-count');
 const clearBtn = document.getElementById('clear-filters');
@@ -87,64 +205,58 @@ async function loadEvents() {
   const loc = locInput.value.trim();
   if (name) qs.set('search', name);
   if (loc) qs.set('location', loc);
+  const org = orgInput.value.trim();
+  if (org) qs.set('organiser', org);
 
   const hasSearch = qs.toString() !== '';
   clearBtn.hidden = !hasSearch;
-  countEl.textContent = 'Loading events…';
+  countEl.textContent = t('ev.loading');
 
   try {
-    const { events } = await api('/events' + (hasSearch ? '?' + qs : ''));
+    const data = await api('/events' + (hasSearch ? '?' + qs : ''));
     if (myRequest !== requestId) return;
 
-    countEl.textContent = events.length === 1 ? '1 event found' : events.length + ' events found';
+    let events = data.events;
+    if (hideDone.checked) events = events.filter((ev) => !UNAVAILABLE.includes(ev.sales_status));
+
+    countEl.textContent = events.length === 1 ? t('ev.found1') : t('ev.found', { n: events.length });
     if (events.length === 0) {
-      grid.innerHTML = '<p class="empty">No events match your search. Try a different name or location.</p>';
+      grid.innerHTML = '<p class="empty">' + safe(t('ev.none')) + '</p>';
       return;
     }
-    grid.innerHTML = events.map((ev, i) => {
-      const col = colorFor(ev.category);
-      const date = new Date(ev.event_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-      const thumbStyle = ev.cover_image_url
-        ? `background-image:url('${safe(ev.cover_image_url)}'); background-size:cover; background-position:center; animation:none;`
-        : '';
-      return `
-        <a class="event-card" href="/event-details.html?id=${ev.event_id}" style="animation-delay:${i * 0.06}s">
-          <div class="event-thumb" style="${thumbStyle}">
-            <span class="category-pill" style="background:${col.bg};color:${col.text};">${safe(ev.category || 'Event')}</span>
-          </div>
-          <div class="body">
-            <p class="title">${safe(ev.title)}</p>
-            <p class="meta">${date} &middot; ${safe(ev.venue || '')}</p>
-          </div>
-        </a>`;
-    }).join('');
+    grid.innerHTML = events.map(cardHtml).join('');
   } catch (err) {
     if (myRequest !== requestId) return;
     console.error(err);
     countEl.textContent = '';
-    grid.innerHTML = '<p class="empty" style="color:var(--danger-text);">Could not load events: ' + safe(err.message) + '</p>';
+    grid.innerHTML = '<p class="empty" style="color:var(--danger-text);">' + safe(t('ev.error')) + ': ' + safe(err.message) + '</p>';
   }
 }
 
 function debouncedLoad() {
   clearTimeout(timer);
-  timer = setTimeout(loadEvents, 300); // wait until the user pauses typing
+  timer = setTimeout(() => { loadEvents(); loadHighlights(); }, 300); // wait until the user pauses typing
 }
 nameInput.addEventListener('input', debouncedLoad);
+orgInput.addEventListener('input', debouncedLoad);
 locInput.addEventListener('input', debouncedLoad);
-document.getElementById('search-form').addEventListener('submit', (e) => { e.preventDefault(); loadEvents(); });
+hideDone.addEventListener('change', loadEvents);
+document.getElementById('search-form').addEventListener('submit', (e) => { e.preventDefault(); loadEvents(); loadHighlights(); });
 
 clearBtn.addEventListener('click', () => {
   nameInput.value = '';
+  orgInput.value = '';
   locInput.value = '';
   loadEvents();
+  loadHighlights();
 });
 
 loadEvents();
+loadHighlights();
 renderNav('home').then(session => {
   if (session) {
     const w = document.getElementById('welcome-msg');
-    w.textContent = 'Welcome, ' + session.name.split(' ')[0];
+    w.textContent = t('ev.welcome', { name: session.name.split(' ')[0] });
     w.hidden = false;
   }
 });

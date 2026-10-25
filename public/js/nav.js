@@ -45,6 +45,14 @@ const ICONS = {
   'box-arrow-in-right': {
     line: '<path fill-rule="evenodd" d="M6 3.5a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v9a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-2a.5.5 0 0 0-1 0v2A1.5 1.5 0 0 0 6.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2h-8A1.5 1.5 0 0 0 5 3.5v2a.5.5 0 0 0 1 0z"/><path fill-rule="evenodd" d="M11.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 1 0-.708.708L10.293 7.5H1.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/>',
   },
+  'bell': {
+    line: '<path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2M8 1.918l-.797.161A4 4 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4 4 0 0 0-3.203-3.92zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5 5 0 0 1 13 6c0 .88.32 4.2 1.22 6"/>',
+    fill: '<path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2m.995-14.901a1 1 0 1 0-1.99 0A5 5 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901"/>',
+  },
+    'heart': {
+    line: '<path d="m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143q.09.083.176.171a3 3 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15"/>',
+    fill: '<path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314"/>',
+  },
 };
 
 // filled = true gives the solid version (used for the active tab)
@@ -57,28 +65,30 @@ function icon(name, filled) {
 // mobileOnly tabs are hidden on desktop (Profile lives in the account menu there)
 const NAV_TABS = {
   guest: [
-    { key: 'home', label: 'Events', icon: 'house', href: '/events.html' },
-    { key: 'login', label: 'Log in', icon: 'box-arrow-in-right', href: '/login.html', mobileOnly: true },
-    { key: 'signup', label: 'Sign up', icon: 'person-plus', href: '/register.html', mobileOnly: true },
+    { key: 'home', labelKey: 'nav.events', icon: 'house', href: '/events.html' },
+    { key: 'login', labelKey: 'nav.login', icon: 'box-arrow-in-right', href: '/login.html', mobileOnly: true },
+    { key: 'signup', labelKey: 'nav.signup', icon: 'person-plus', href: '/register.html', mobileOnly: true },
   ],
   attendee: [
-    { key: 'home', label: 'Home', icon: 'house', href: '/events.html' },
-    { key: 'tickets', label: 'Tickets', icon: 'ticket-perforated', href: '/my-tickets.html' },
-    { key: 'profile', label: 'Profile', icon: 'person', href: '/profile.html', mobileOnly: true },
+    { key: 'home', labelKey: 'nav.home', icon: 'house', href: '/events.html' },
+    { key: 'saved', labelKey: 'nav.saved', icon: 'heart', href: '/saved.html' },
+    { key: 'updates', labelKey: 'nav.updates', icon: 'bell', href: '/updates.html', badge: 'updates-badge' },
+    { key: 'tickets', labelKey: 'nav.tickets', icon: 'ticket-perforated', href: '/my-tickets.html' },
+    { key: 'profile', labelKey: 'nav.profile', icon: 'person', href: '/profile.html', mobileOnly: true },
   ],
   organiser: [
-    { key: 'home', label: 'Dashboard', icon: 'grid', href: '/organiser-dashboard.html' },
-    { key: 'agents', label: 'Agents', icon: 'people', href: '/organiser-agents.html' },
-    { key: 'reports', label: 'Reports', icon: 'bar-chart-line', href: '/organiser-reports.html' },
-    { key: 'profile', label: 'Profile', icon: 'person', href: '/profile.html', mobileOnly: true },
+    { key: 'home', labelKey: 'nav.dashboard', icon: 'grid', href: '/organiser-dashboard.html' },
+    { key: 'agents', labelKey: 'nav.agents', icon: 'people', href: '/organiser-agents.html' },
+    { key: 'reports', labelKey: 'nav.reports', icon: 'bar-chart-line', href: '/organiser-reports.html' },
+    { key: 'profile', labelKey: 'nav.profile', icon: 'person', href: '/profile.html', mobileOnly: true },
   ],
   admin: [
-    { key: 'home', label: 'Dashboard', icon: 'grid', href: '/admin-dashboard.html' },
-    { key: 'profile', label: 'Profile', icon: 'person', href: '/profile.html', mobileOnly: true },
+    { key: 'home', labelKey: 'nav.dashboard', icon: 'grid', href: '/admin-dashboard.html' },
+    { key: 'profile', labelKey: 'nav.profile', icon: 'person', href: '/profile.html', mobileOnly: true },
   ],
   gate_agent: [
-    { key: 'home', label: 'Scan', icon: 'qr-code-scan', href: '/gate-scan.html' },
-    { key: 'profile', label: 'Profile', icon: 'person', href: '/profile.html', mobileOnly: true },
+    { key: 'home', labelKey: 'nav.scan', icon: 'qr-code-scan', href: '/gate-scan.html' },
+    { key: 'profile', labelKey: 'nav.profile', icon: 'person', href: '/profile.html', mobileOnly: true },
   ],
 };
 
@@ -95,29 +105,31 @@ async function renderNav(activeTab) {
   // Visitors who sign up or log in from this page come back to it afterwards
   const nextQ = '?next=' + encodeURIComponent(window.location.pathname + window.location.search);
 
-  const tabsHtml = items.map((t) => {
-    const active = t.key === activeTab;
-    const href = (!session && (t.key === 'login' || t.key === 'signup')) ? t.href + nextQ : t.href;
+  const tabsHtml = items.map((tab) => {
+    const active = tab.key === activeTab;
+    const href = (!session && (tab.key === 'login' || tab.key === 'signup')) ? tab.href + nextQ : tab.href;
     return `
-    <a href="${href}" class="${active ? 'active' : ''}${t.mobileOnly ? ' mobile-only' : ''}"
+    <a href="${href}" class="${active ? 'active' : ''}${tab.mobileOnly ? ' mobile-only' : ''}"
        ${active ? 'aria-current="page"' : ''}>
-      ${icon(t.icon, active)}<span>${t.label}</span>
+      <span class="icon-wrap">${icon(tab.icon, active)}${tab.badge ? `<span class="tab-badge" id="${tab.badge}" hidden></span>` : ''}</span><span>${t(tab.labelKey)}</span>
     </a>`;
   }).join('');
 
   // Name and initial are filled in with textContent below so they can never inject HTML
   const accountHtml = session
     ? `
-      <button class="icon-btn" id="account-btn" aria-haspopup="true" aria-expanded="false" aria-label="Account menu">
+      <button class="icon-btn" id="account-btn" aria-haspopup="true" aria-expanded="false" aria-label="${t('nav.myProfile')}">
         <span class="avatar-mini" id="avatar-mini"></span>
       </button>
       <div class="account-menu" id="account-menu" role="menu">
         <div class="account-name" id="account-name"></div>
-        <a href="/profile.html" role="menuitem">${icon('person')} My profile</a>
-        <button id="logout-link" role="menuitem" class="danger">${icon('box-arrow-right')} Log out</button>
+        <a href="/profile.html" role="menuitem">${icon('person')} ${t('nav.myProfile')}</a>
+        <button id="logout-link" role="menuitem" class="danger">${icon('box-arrow-right')} ${t('nav.logout')}</button>
       </div>`
-    : `<a class="icon-btn login-link" href="/login.html${nextQ}" style="text-decoration:none;">${icon('box-arrow-in-right')}<span>Log in</span></a>
-       <a class="btn-pill" href="/register.html${nextQ}">${icon('person-plus')}<span>Sign up</span></a>`;
+    : `<a class="icon-btn login-link" href="/login.html${nextQ}" style="text-decoration:none;">${icon('box-arrow-in-right')}<span>${t('nav.login')}</span></a>
+       <a class="btn-pill" href="/register.html${nextQ}">${icon('person-plus')}<span>${t('nav.signup')}</span></a>`;
+
+  const lang = currentLanguage();
 
   const old = document.getElementById('site-header');
   if (old) old.remove();
@@ -126,13 +138,16 @@ async function renderNav(activeTab) {
   header.id = 'site-header';
   header.className = 'site-header';
   header.innerHTML = `
-    <a class="skip-link" href="#main">Skip to main content</a>
-    <a class="logo" href="/events.html" aria-label="Lets Connect home">
+    <a class="skip-link" href="#main">${t('nav.skip')}</a>
+    <a class="logo" href="/events.html" aria-label="Lets Connect">
       <span class="logo-mark">LC</span><span class="logo-text">Lets Connect</span>
     </a>
     <nav class="main-nav" aria-label="Main">${tabsHtml}</nav>
     <div class="header-actions">
-      <button class="icon-btn" id="settings-btn" aria-label="Display settings">${icon('sliders')}</button>
+      <button class="icon-btn" id="lang-btn" aria-label="${t('set.language')}: ${lang.native}">
+        ${flag(lang.flag)}<span class="lang-code">${lang.code.toUpperCase()}</span>
+      </button>
+      <button class="icon-btn" id="settings-btn" aria-label="${t('set.title')}">${icon('sliders')}</button>
       ${accountHtml}
     </div>`;
   document.body.prepend(header);
@@ -142,9 +157,11 @@ async function renderNav(activeTab) {
   const main = document.querySelector('.container');
   if (main && !main.id) main.id = 'main';
 
-  // Settings panel (defined in settings.js)
+  // Settings panel and language picker (both live in settings.js)
   const settingsBtn = document.getElementById('settings-btn');
   settingsBtn.addEventListener('click', () => openSettingsPanel(settingsBtn));
+  const langBtn = document.getElementById('lang-btn');
+  langBtn.addEventListener('click', () => openSettingsPanel(langBtn, 'language'));
 
   // Account menu + logout
   if (session) {
@@ -166,6 +183,20 @@ async function renderNav(activeTab) {
       await api('/auth/logout', { method: 'POST' });
       window.location.href = '/login.html';
     });
+  }
+
+  // Bell badge: updates from followed organisers that this device has not seen yet
+  if (session && session.role === 'attendee' && activeTab !== 'updates') {
+    api('/social/feed').then(({ updates }) => {
+      const seen = new Date(localStorage.getItem('lc_updates_seen') || 0);
+      const unread = updates.filter((u) => new Date(u.created_at) > seen).length;
+      const badge = document.getElementById('updates-badge');
+      if (badge && unread > 0) {
+        badge.textContent = unread > 9 ? '9+' : unread;
+        badge.hidden = false;
+        badge.closest('a').setAttribute('aria-label', t('nav.updates') + ': ' + unread);
+      }
+    }).catch(() => { /* the badge is a bonus */ });
   }
 
   return session; // null for visitors; pages already check `if (session)`

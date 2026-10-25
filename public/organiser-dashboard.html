@@ -15,6 +15,7 @@
   <div style="display:flex; gap:8px; margin-bottom:20px;">
   <a href="/organiser-agents.html" class="btn btn-outline" style="flex:1;">Gate Agents</a>
   <a href="/organiser-reports.html" class="btn btn-outline" style="flex:1;">Reports</a>
+    <a href="/organiser-updates.html" class="btn btn-outline" style="flex:1;">Updates</a>
 </div>
   <h3>My events</h3>
   <div id="event-list">Loading...</div>
@@ -78,12 +79,22 @@ async function load() {
           ${statusBadge[ev.status] || ''}
         </div>
         <a href="/organiser-create-ticket.html?eventId=${ev.event_id}" style="display:block; font-size:12px; color:var(--navy); font-weight:600; margin-top:10px;">Edit event</a>
+                ${ev.status === 'published' ? `<button class="btn btn-outline" style="margin-top:10px; color:var(--danger-text); border-color:var(--danger-text);" onclick="cancelEvent(${ev.event_id})">Cancel event</button>` : ''}
       </div>
     </div>
   `;
 }).join('');
   } catch (err) {
     document.getElementById('event-list').innerHTML = '<p style="color:var(--danger-text);">Please log in as an organiser.</p>';
+  }
+}
+async function cancelEvent(eventId) {
+  if (!confirm('Cancel this event?\n\nTicket sales stop immediately and attendees will see it marked as cancelled. This cannot be undone.')) return;
+  try {
+    await api('/events/' + eventId + '/cancel', { method: 'PATCH' });
+    load();
+  } catch (err) {
+    alert(err.message);
   }
 }
 load();

@@ -12,6 +12,8 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
+// Flag images (SVG) from the flag-icons package
+app.use('/vendor/flags', express.static(path.join(__dirname, '..', 'node_modules', 'flag-icons')));
 
 const MySQLStore = require('express-mysql-session')(session);
 const { pool } = require('./config/db');
@@ -44,6 +46,8 @@ app.use('/api/admin', require('./routes/admin.routes'));
 app.use('/api/gate', require('./routes/scan.routes'));
 app.use('/api/gate-assignments', require('./routes/gateAssignment.routes'));
 app.use('/api/organiser', require('./routes/organiserAgent.routes'));
+app.use('/api/social', require('./routes/social.routes'));
+app.use('/api/saved', require('./routes/saved.routes'));
 app.listen(3000, '0.0.0.0', () => console.log('Running on 3000'));
 // Any error inside a route is logged and returned as JSON instead of crashing the server
 app.use((err, req, res, next) => {

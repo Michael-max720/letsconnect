@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS events (
   status        ENUM('draft','published','cancelled') NOT NULL DEFAULT 'draft',
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (organiser_id) REFERENCES users(user_id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB,  is_featured   TINYINT(1) NOT NULL DEFAULT 0,UPDATE events SET is_featured = 1 WHERE event_id IN (1, 2);
 
 -- ---------------------------------------------------------------------
 -- TICKET_CATEGORY
@@ -128,4 +128,33 @@ CREATE TABLE IF NOT EXISTS scan_logs (
   scanned_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (ticket_id) REFERENCES tickets(ticket_id),
   FOREIGN KEY (gate_agent_id) REFERENCES users(user_id)
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS follows (
+  follower_id  INT NOT NULL,
+  organiser_id INT NOT NULL,
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (follower_id, organiser_id),
+  FOREIGN KEY (follower_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (organiser_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS organiser_updates (
+  update_id    INT AUTO_INCREMENT PRIMARY KEY,
+  organiser_id INT NOT NULL,
+  event_id     INT NULL,
+  type         ENUM('post','new_event','cancelled') NOT NULL DEFAULT 'post',
+  title        VARCHAR(160) NOT NULL,
+  body         TEXT,
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (organiser_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (event_id) REFERENCES events(event_id) ON DELETE SET NULL,
+  INDEX idx_updates_org_time (organiser_id, created_at)
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS saved_events (
+  user_id    INT NOT NULL,
+  event_id   INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, event_id),
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (event_id) REFERENCES events(event_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

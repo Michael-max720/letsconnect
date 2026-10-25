@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Handling - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <a href="/events.html" aria-label="Back to events">&larr;</a>
+  <span>Data Handling</span>
+  <span></span>
+</div>
+<main class="container legal" id="main">
+  <p class="legal-draft">This page describes how the Lets Connect prototype is designed to work. It is a draft written for a university project and has not been reviewed by a lawyer. Have it reviewed, and replace the contact details, before using the platform with real customers.</p>
+  <h1>Data Handling</h1>
+  <p class="legal-updated">Last updated: 22 October 2026</p>
+
+  <p>This page explains, in more detail than the <a href="/privacy.html">Privacy Policy</a>, what data the platform stores, who can see it and how long it is kept.</p>
+
+  <h2>What we store</h2>
+  <table class="legal-table">
+    <thead><tr><th>Data</th><th>Purpose</th><th>Who can see it</th><th>How long</th></tr></thead>
+    <tbody>
+      <tr><td>Name, email, phone, username</td><td>Account, contact, tickets</td><td>You and administrators</td><td>While your account exists</td></tr>
+      <tr><td>Password</td><td>Logging in</td><td>Nobody (stored as a one-way hash)</td><td>While your account exists</td></tr>
+      <tr><td>Verification code</td><td>Confirming your email</td><td>The system only</td><td>Short-lived; removed once used</td></tr>
+      <tr><td>Tickets and QR codes</td><td>Entry to events</td><td>You; checked by gate agents on arrival</td><td>Kept as event records</td></tr>
+      <tr><td>Payment records (amount, M-Pesa number, reference)</td><td>Payments, receipts, accounting</td><td>You and administrators</td><td>As long as accounting and legal rules require</td></tr>
+      <tr><td>Follows and updates</td><td>Your updates feed</td><td>You. Organisers only see a follower count</td><td>Until you unfollow or delete your account</td></tr>
+      <tr><td>Saved events</td><td>Your Saved list, and updates about those events</td><td>You only. Organisers cannot see who saved their event</td><td>Until you remove them or delete your account</td></tr>
+      <tr><td>Scan history</td><td>Checking who entered, preventing duplicate tickets</td><td>Event staff and administrators</td><td>Kept as event records</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What stays on your device</h2>
+  <ul>
+    <li>A session cookie that keeps you logged in (it expires after 8 hours).</li>
+    <li>Your display choices: theme, brightness, text size, layout, language and region.</li>
+    <li>The time you last opened your updates, used to show the unread count.</li>
+  </ul>
+  <p>You can clear these at any time in your browser settings, or with "Reset to defaults" in Settings.</p>
+
+  <h2>How we protect it</h2>
+  <ul>
+    <li>Passwords are hashed, so even we cannot read them.</li>
+    <li>What you can see and do depends on your account type. Attendees, organisers, gate agents and administrators each have separate permissions, checked on the server.</li>
+    <li>The platform is designed to be served over HTTPS when it goes live.</li>
+  </ul>
+
+  <h2>Sharing</h2>
+  <p>We share data only where needed to run the service: with M-Pesa (Safaricom) to take payment, with the organiser of an event to run that event, and with our hosting provider once the platform is deployed. We do not sell personal data.</p>
+
+  <h2>Keeping and deleting data</h2>
+  <p>We keep your data while your account is active. If you ask us to delete your account, we will delete or anonymise your personal data, except records we must keep for accounting or legal reasons.</p>
+
+  <h2>If something goes wrong</h2>
+  <p>If a data breach affects your personal information, we will tell the people affected and the Office of the Data Protection Commissioner as the Data Protection Act, 2019 requires.</p>
+
+  <h2>Your requests</h2>
+  <p>To see, correct, export or delete your data, email <a href="mailto:support@letsconnect.example">support@letsconnect.example</a> (replace with your real address).</p>
+</main>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script src="/js/footer.js"></script>
+<script>renderNav('');</script>
+</body>
+</html>

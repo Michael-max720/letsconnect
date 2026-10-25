@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saved events - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
+</head>
+<body>
+<div class="topbar"><span>Saved events</span></div>
+<div class="container" id="main">
+  <div id="login-prompt" class="alert alert-info" style="display:none; margin-top:16px;">
+    Log in as an attendee to save events and see them here.
+    <div class="share-row" style="margin:10px 0 0;">
+      <a class="btn btn-primary" id="login-link" href="/login.html">Log in</a>
+      <a class="btn btn-outline" id="signup-link" href="/register.html">Sign up</a>
+    </div>
+  </div>
+
+  <div id="content">
+    <p class="detail-meta" id="saved-count" style="margin-top:16px;" aria-live="polite"></p>
+    <div id="event-grid" class="event-grid"></div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script src="/js/posters.js"></script>
+<script src="/js/footer.js"></script>
+<script>
+const grid = document.getElementById('event-grid');
+const countEl = document.getElementById('saved-count');
+
+function updateCount() {
+  const n = grid.querySelectorAll('.card-wrap').length;
+  countEl.textContent = n === 1 ? '1 saved event' : n + ' saved events';
+  if (n === 0) {
+    countEl.textContent = '';
+    grid.innerHTML = '<p class="empty">No saved events yet. Tap the heart on any event to keep it here, and you will hear about changes to it.<br><a class="update-link" href="/events.html">Browse events</a></p>';
+  }
+}
+
+async function load() {
+  const { events } = await api('/saved');
+  grid.innerHTML = events.map(cardHtml).join('');
+  updateCount();
+}
+
+// Un-saving removes the poster right away, with a short chance to undo it
+document.addEventListener('saved-changed', (e) => {
+  if (e.detail.saved) return;
+  const wrap = grid.querySelector('.card-wrap [data-save-event="' + e.detail.eventId + '"]');
+  if (wrap) wrap.closest('.card-wrap').remove();
+  updateCount();
+  savedToast('Removed from saved', 'Undo', async () => {
+    try {
+      await api('/saved/' + e.detail.eventId, { method: 'POST' });
+      savedState.ids.add(e.detail.eventId);
+      load();
+    } catch (err) {
+      savedToast(err.message);
+    }
+  });
+});
+
+const nextQ = '?next=' + encodeURIComponent(window.location.pathname);
+document.getElementById('login-link').href = '/login.html' + nextQ;
+document.getElementById('signup-link').href = '/register.html' + nextQ;
+
+load().catch(() => {
+  document.getElementById('content').style.display = 'none';
+  document.getElementById('login-prompt').style.display = 'block';
+});
+renderNav('saved');
+</script>
+</body>
+</html>
