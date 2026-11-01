@@ -29,12 +29,15 @@
   <div id="updates">Loading...</div>
 
   <h2 class="section-title" style="margin-top:20px;">Events</h2>
-  <div id="event-grid" class="event-grid"></div>
+  <div id="event-grid" class="event-grid"></div> 
+  <section id="reviews" class="reviews" aria-label="Reviews"></section>
+
 </div>
 
 <script src="/js/api.js"></script>
 <script src="/js/nav.js"></script>
 <script src="/js/posters.js"></script>
+<script src="/js/reviews.js"></script>
 <script>
 const orgId = new URLSearchParams(window.location.search).get('id');
 const state = { following: false, followers: 0, role: null };
@@ -138,6 +141,7 @@ async function load() {
 
 load();
 renderNav('home');
+renderReviews(document.getElementById('reviews'), { type: 'organiser', id: new URLSearchParams(window.location.search).get('id') });      
 </script>
 </body>
 </html>

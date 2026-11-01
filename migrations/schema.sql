@@ -158,3 +158,16 @@ CREATE TABLE IF NOT EXISTS saved_events (
   FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
   FOREIGN KEY (event_id) REFERENCES events(event_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS reviews (
+  review_id   INT AUTO_INCREMENT PRIMARY KEY,
+  reviewer_id INT NOT NULL,
+  target_type ENUM('event','organiser','platform') NOT NULL,
+  target_id   INT NOT NULL DEFAULT 0,
+  rating      TINYINT UNSIGNED NOT NULL,
+  comment     TEXT NULL,
+  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY one_review_per_target (reviewer_id, target_type, target_id),
+  INDEX idx_review_target (target_type, target_id),
+  FOREIGN KEY (reviewer_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;

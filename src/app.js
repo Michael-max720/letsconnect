@@ -48,6 +48,7 @@ app.use('/api/gate-assignments', require('./routes/gateAssignment.routes'));
 app.use('/api/organiser', require('./routes/organiserAgent.routes'));
 app.use('/api/social', require('./routes/social.routes'));
 app.use('/api/saved', require('./routes/saved.routes'));
+app.use('/api/reviews', require('./routes/review.routes'));
 app.listen(3000, '0.0.0.0', () => console.log('Running on 3000'));
 // Any error inside a route is logged and returned as JSON instead of crashing the server
 app.use((err, req, res, next) => {

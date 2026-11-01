@@ -87,6 +87,7 @@ const STRINGS = {
     'ft.terms': 'Terms & Conditions', 'ft.privacy': 'Privacy Policy', 'ft.copyright': 'Copyright', 'ft.data': 'Data Handling',
     'ft.rights': 'All rights reserved.',  
     'nav.saved': 'Saved', 'sv.save': 'Save event', 'sv.unsave': 'Remove from saved', 'sv.saved': 'Saved',
+    'ft.reviews': 'Reviews',
   },
   sw: {
     'nav.events': 'Matukio', 'nav.home': 'Nyumbani', 'nav.tickets': 'Tiketi', 'nav.profile': 'Wasifu',
@@ -119,6 +120,7 @@ const STRINGS = {
     'ft.terms': 'Masharti na Vigezo', 'ft.privacy': 'Sera ya Faragha', 'ft.copyright': 'Hakimiliki', 'ft.data': 'Ushughulikiaji wa Data',
     'ft.rights': 'Haki zote zimehifadhiwa.',
     'nav.saved': 'Zilizohifadhiwa', 'sv.save': 'Hifadhi tukio', 'sv.unsave': 'Ondoa kwenye zilizohifadhiwa', 'sv.saved': 'Imehifadhiwa',
+    'ft.reviews': 'Maoni',
   },
 
   fr: {
@@ -152,6 +154,7 @@ const STRINGS = {
     'ft.terms': 'Conditions générales', 'ft.privacy': 'Politique de confidentialité', 'ft.copyright': "Droits d'auteur", 'ft.data': 'Traitement des données',
     'ft.rights': 'Tous droits réservés.',
     'nav.saved': 'Enregistrés', 'sv.save': "Enregistrer l'événement", 'sv.unsave': 'Retirer des enregistrés', 'sv.saved': 'Enregistré',
+    'ft.reviews': 'Avis',
   },
   ar: {
     'nav.events': 'الفعاليات', 'nav.home': 'الرئيسية', 'nav.tickets': 'التذاكر', 'nav.profile': 'الملف الشخصي',

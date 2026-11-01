@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your reviews - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <a href="/organiser-dashboard.html" aria-label="Back to dashboard">&larr;</a>
+  <span>Your reviews</span>
+  <span></span>
+</div>
+<div class="container" id="main" style="max-width:720px;">
+  <div id="msg" class="alert alert-error" style="display:none; margin-top:16px;" role="alert"></div>
+  <div id="content" hidden>
+    <div class="rv-summary" id="overall" style="margin-top:16px;"></div>
+
+    <h2 class="section-title">Rating by event</h2>
+    <div id="by-event"></div>
+
+    <h2 class="section-title" style="margin-top:24px;">All reviews</h2>
+    <div id="list"></div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script>
+function safe(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function stars(n) {
+  const full = Math.max(0, Math.min(5, Math.round(n)));
+  return `<span class="stars" role="img" aria-label="${full} out of 5 stars">${'★'.repeat(full)}${'☆'.repeat(5 - full)}</span>`;
+}
+
+async function load() {
+  const d = await api('/reviews/received');
+
+  document.getElementById('overall').innerHTML = d.overall.count
+    ? `<div class="rv-score"><div class="num">${d.overall.average.toFixed(1)}</div>${stars(d.overall.average)}
+         <div class="count">${d.overall.count === 1 ? '1 review' : d.overall.count + ' reviews'}</div></div>
+       <p style="margin:0; flex:1; min-width:180px; color:var(--sub);">Your overall score across reviews of you and of your events. Only people who attended can review.</p>`
+    : '<p style="margin:0; color:var(--sub);">No reviews yet. Attendees can review you and your events after they have taken place.</p>';
+
+  document.getElementById('by-event').innerHTML = d.events.length
+    ? d.events.map((e) => `
+        <div class="card update-card">
+          <div class="update-head">
+            <a class="update-link" href="/event-details.html?id=${e.event_id}"><strong>${safe(e.title)}</strong></a>
+            ${e.count ? stars(e.average) : '<span class="badge badge-warn">No reviews</span>'}
+          </div>
+          <div class="update-meta">${e.count ? e.average.toFixed(1) + ' average from ' + (e.count === 1 ? '1 review' : e.count + ' reviews') : ''}</div>
+        </div>`).join('')
+    : '<p style="color:var(--sub);">You have no published events yet.</p>';
+
+  document.getElementById('list').innerHTML = d.reviews.length
+    ? d.reviews.map((r) => {
+        const when = new Date(r.created_at).toLocaleDateString(loadSettings().language, { day: 'numeric', month: 'short', year: 'numeric' });
+        return `
+          <div class="card rv-item">
+            <div class="rv-head">
+              <span class="rv-name">${safe(r.reviewer)}</span>
+              <span class="badge badge-info">${safe(r.about)}</span>
+              <span class="rv-date">${when}</span>
+            </div>
+            ${stars(r.rating)}
+            ${r.comment ? `<p class="rv-text">${safe(r.comment)}</p>` : ''}
+          </div>`;
+      }).join('')
+    : '<p style="color:var(--sub);">Nothing yet.</p>';
+
+  document.getElementById('content').hidden = false;
+}
+
+load().catch(() => {
+  const box = document.getElementById('msg');
+  box.textContent = 'Please log in as an organiser to see your reviews.';
+  box.style.display = 'block';
+});
+renderNav('home');
+</script>
+</body>
+</html>

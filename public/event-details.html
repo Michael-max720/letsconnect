@@ -19,8 +19,8 @@
 
 <script src="/js/api.js"></script>
 <script src="/js/nav.js"></script>
-<script src="/js/nav.js"></script>
 <script src="/js/posters.js"></script>
+<script src="/js/reviews.js"></script>
 <script>
 const params = new URLSearchParams(window.location.search);
 const eventId = params.get('id');
@@ -162,7 +162,7 @@ async function load() {
 
       <div class="share-row">
         <button type="button" class="btn btn-outline" id="share-btn">Share</button>
-                <a class="btn btn-outline" id="wa-btn" target="_blank" rel="noopener">WhatsApp</a>
+         <a class="btn btn-outline" id="wa-btn" target="_blank" rel="noopener">WhatsApp</a>
         <button type="button" class="btn btn-outline save-btn" data-save-event="${event.event_id}" aria-pressed="false" hidden><span class="save-icon">${heartSvg}</span><span class="save-label"></span></button>
       </div>
 
@@ -175,8 +175,10 @@ async function load() {
       <div id="categories" role="radiogroup" aria-label="Ticket category">${catsHtml}</div>
 
       ${buyable ? guestNote + staffNote + continueButton + guestLogin : ''}
-    `;
 
+      <section id="reviews" class="reviews" aria-label="Reviews"></section>
+      `;
+      renderReviews(document.getElementById('reviews'), { type: 'event', id: event.event_id });
     // Share buttons
     document.getElementById('share-btn').addEventListener('click', () => shareEvent(event));
     const waText = `Check out ${event.title} on Lets Connect ${window.location.href}`;

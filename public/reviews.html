@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reviews of Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <a href="/events.html" aria-label="Back to events">&larr;</a>
+  <span>Reviews</span>
+  <span></span>
+</div>
+<main class="container" id="main" style="max-width:720px;">
+  <h1 style="margin:20px 0 4px; font-size:1.625rem;">What people say about Lets Connect</h1>
+  <p class="detail-meta">Used the platform? Tell us how it went. Your review helps us improve it.</p>
+  <section id="reviews" class="reviews" aria-label="Reviews of the platform"></section>
+</main>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script src="/js/reviews.js"></script>
+<script src="/js/footer.js"></script>
+<script>
+renderReviews(document.getElementById('reviews'), { type: 'platform' });
+renderNav('');
+</script>
+</body>
+</html>
