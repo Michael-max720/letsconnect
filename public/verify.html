@@ -1,86 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Verify account - Lets Connect</title>
-<link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-<div class="topbar">Verify account</div>
-<div class="container" style="max-width:420px;">
-  <p style="margin-top:24px; color:var(--sub);">Enter the 6-digit code sent to your email.</p>
-  <div id="error-box" class="alert alert-error" style="display:none;"></div>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify account - Lets Connect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
 
- <form id="verify-form">
-  <div class="field">
-    <label>Verification code</label>
-    <input type="text" id="code" maxlength="6" required style="letter-spacing:4px; font-size:18px; text-align:center;">
-  </div>
-  <button type="submit" class="btn btn-primary">Verify</button>
-</form>
-<p id="resend-text" style="text-align:center; color:var(--sub); font-size:13px; margin-top:14px;">
-  Resend code in <span id="countdown">60</span>s
-</p>
-<a href="#" id="resend-link" class="btn-link" style="display:none;">Resend code</a>
-</div>
+  <!-- Styles for this page live here, so no separate CSS file is needed -->
+  <style>
+/* public/css/verify.css
+   Styles for verify.html only. Everything is scoped under .verify-page / .vcard
+   so nothing here can change other pages. */
 
-<script src="/js/api.js"></script>
-<script>
-const params = new URLSearchParams(window.location.search);
-const userId = params.get('userId');
-   const nextQuery = params.get('next') ? '?next=' + encodeURIComponent(params.get('next')) : '';
-let secondsLeft = 60;
-let timerInterval;
-
-function startCountdown() {
-  secondsLeft = 60;
-  document.getElementById('resend-text').style.display = 'block';
-  document.getElementById('resend-link').style.display = 'none';
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    secondsLeft--;
-    document.getElementById('countdown').textContent = secondsLeft;
-    if (secondsLeft <= 0) {
-      clearInterval(timerInterval);
-      document.getElementById('resend-text').style.display = 'none';
-      document.getElementById('resend-link').style.display = 'block';
-    }
-  }, 1000);
+.verify-page {
+  --v-font: "Sora", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --v-muted: #c4c8e4;
+  --v-panel: rgba(8, 9, 24, 0.80);
+  --v-tile: #07081a;            /* very dark tile: strong contrast with white digits */
+  --v-edge: rgba(255, 255, 255, 0.45);
+  --v-ok: #3dffa2;
+  --v-bad: #ff5c7a;
+  --v-irid: #ff7ad9, #8a7dff, #4ff0e0, #b6ff7a, #ffd27a, #ff7ad9;
+  min-height: 100vh;
+  font-family: var(--v-font);
 }
-startCountdown();
 
-document.getElementById('resend-link').addEventListener('click', async (e) => {
-  e.preventDefault();
-  try {
-    await api('/auth/resend-otp', {
-      method: 'POST',
-      body: JSON.stringify({ userId: Number(userId) }),
-    });
-    startCountdown();
-  } catch (err) {
-    showError(err.message);
-  }
-});
+/* The angle drives every iridescent border. Children inherit it. */
+@property --angle { syntax: "<angle>"; inherits: true; initial-value: 0deg; }
+@keyframes v-spin { to { --angle: 360deg; } }
 
-document.getElementById('verify-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  try {
-    const data = await api('/auth/verify-otp', {
-      method: 'POST',
-      body: JSON.stringify({ userId: Number(userId), code: document.getElementById('code').value }),
-    });
-    if (data.status === 'pending_approval') {
-      alert('Account verified. Your account is now awaiting admin approval before you can log in.');
-         window.location.href = '/login.html' + nextQuery;
-    } else {
-      alert('Account verified. You can now log in.');
-         window.location.href = '/login.html' + nextQuery;
-    }
-  } catch (err) {
-    showError(err.message);
-  }
-});
-</script>
+/* Dark wash over your rotating photos so the card stays readable */
+.verify-page::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -1;
+  background: linear-gradient(180deg, rgba(5, 6, 26, 0.45), rgba(5, 6, 26, 0.82));
+  pointer-events: none;
+}
+
+/* ---------- Card ---------- */
+.vcard {
+  width: min(420px, calc(100% - 32px));
+  margin: 36px auto;
+  padding: 30px 26px 24px;
+  text-align: center;
+  color: #fff;
+  border-radius: 24px;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(var(--v-panel), var(--v-panel)) padding-box,
+    conic-gradient(from var(--angle), var(--v-irid)) border-box;
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  animation: v-spin 6s linear infinite;
+}
+.vcard h1 { margin: 0 0 6px; font-size: 1.55rem; font-weight: 700; letter-spacing: -0.01em; color: #fff; }
+.vsub { margin: 0; color: var(--v-muted); font-size: .95rem; line-height: 1.5; }
+.vsub strong { color: #fff; font-weight: 600; word-break: break-all; }
+
+.vcard[data-state="success"] .vcard[data-state="success"] 
+/* ---------- Tiles ---------- */
+.vcard .tiles { display: flex; justify-content: center; gap: 10px; margin: 26px 0 14px; }
+
+.vcard .tile {
+  width: 50px; height: 62px; padding: 0; margin: 0;
+  text-align: center;
+  font: 700 1.7rem/1 var(--v-font);
+  color: #fff;
+  caret-color: #4ff0e0;
+  border-radius: 14px;
+  border: 2px solid transparent;
+  outline: none;
+  background:
+    linear-gradient(var(--v-tile), var(--v-tile)) padding-box,
+    linear-gradient(var(--v-edge), var(--v-edge)) border-box;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.vcard .tile:focus,
+.vcard .tile.filled {
+  background:
+    linear-gradient(var(--v-tile), var(--v-tile)) padding-box,
+    conic-gradient(from var(--angle), var(--v-irid)) border-box;
+  box-shadow: 0 0 0 4px rgba(138, 125, 255, 0.22), 0 0 22px rgba(79, 240, 224, 0.35);
+}
+.vcard .tile:focus { transform: translateY(-3px); }
+
+/* Typing feedback: each digit pops in */
+.vcard .tile.pop { animation: v-pop .32s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes v-pop {
+  0%   { transform: scale(.7) translateY(6px); }
+  60%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- Progress bar and status ---------- */
+.vprogress { height: 4px; width: 82%; margin: 0 auto 12px; border-radius: 4px; background: rgba(255,255,255,.14); overflow: hidden; }
+.vprogress i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ff7ad9, #8a7dff, #4ff0e0, #b6ff7a); transition: width .25s ease; }
+.vstatus { min-height: 1.4em; margin: 0 0 16px; font-size: .9rem; color: var(--v-muted); transition: color .2s; }
+
+/* ---------- Buttons ---------- */
+.vbtn {
+  width: 100%; padding: 14px 18px;
+  font: 700 1rem var(--v-font); color: #07081a;
+  border: 0; border-radius: 14px; cursor: pointer;
+  background: linear-gradient(110deg, #ffb3ec, #b3b9ff, #9ff7ee, #d6ffa8, #ffe2a8, #ffb3ec);
+  background-size: 250% 100%;
+  animation: v-shimmer 5s linear infinite;
+  transition: transform .15s, opacity .2s, box-shadow .2s;
+}
+@keyframes v-shimmer { to { background-position: 250% 0; } }
+.vbtn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(138,125,255,.45); }
+.vbtn:active:not(:disabled) { transform: translateY(0) scale(.99); }
+.vbtn:disabled { opacity: .4; cursor: not-allowed; animation: none; }
+
+.vrow { display: flex; justify-content: space-between; margin-top: 14px; }
+.vlink { background: none; border: 0; padding: 6px 2px; cursor: pointer; font: 600 .88rem var(--v-font); color: #cfd3ff; text-decoration: underline; text-underline-offset: 3px; }
+.vlink:hover:not(:disabled) { color: #fff; }
+.vlink:disabled { color: #8a8fb8; text-decoration: none; cursor: default; }
+.vcard :focus-visible { outline: 3px solid #4ff0e0; outline-offset: 3px; }
+.vcard .tile:focus-visible { outline: none; }
+
+/* ---------- State feedback (set by verify.js through data-state) ---------- */
+
+/* READY */
+.vcard[data-state="ready"] .vstatus { color: #fff; }
+
+/* VERIFYING: a pulse of light travels across the tiles */
+.vcard[data-state="verifying"] .vstatus { color: #4ff0e0; }
+.vcard[data-state="verifying"] .tile { animation: v-scan 1s ease-in-out infinite; }
+.vcard[data-state="verifying"] .tile:nth-child(2) { animation-delay: .1s; }
+.vcard[data-state="verifying"] .tile:nth-child(3) { animation-delay: .2s; }
+.vcard[data-state="verifying"] .tile:nth-child(4) { animation-delay: .3s; }
+.vcard[data-state="verifying"] .tile:nth-child(5) { animation-delay: .4s; }
+.vcard[data-state="verifying"] .tile:nth-child(6) { animation-delay: .5s; }
+@keyframes v-scan { 0%, 100% { transform: translateY(0); filter: brightness(1); } 50% { transform: translateY(-7px); filter: brightness(1.6); } }
+
+/* ERROR: shake and red */
+.vcard[data-state="error"] .vstatus { color: var(--v-bad); font-weight: 600; }
+.vcard[data-state="error"] .tiles { animation: v-shake .45s ease; }
+.vcard[data-state="error"] .tile {
+  background: linear-gradient(var(--v-tile), var(--v-tile)) padding-box, linear-gradient(var(--v-bad), var(--v-bad)) border-box;
+  box-shadow: 0 0 0 4px rgba(255, 92, 122, .22), 0 0 20px rgba(255, 92, 122, .4);
+}
+@keyframes v-shake {
+  0%, 100% { transform: translateX(0); } 20% { transform: translateX(-9px); } 40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); } 80% { transform: translateX(4px); }
+}
+
+/* SUCCESS: green wave */
+.vcard[data-state="success"] .vstatus { color: var(--v-ok); font-weight: 600; }
+.vcard[data-state="success"] .vprogress i { background: var(--v-ok); }
+.vcard[data-state="success"] .tile {
+  color: var(--v-ok);
+  background: linear-gradient(var(--v-tile), var(--v-tile)) padding-box, linear-gradient(var(--v-ok), var(--v-ok)) border-box;
+  box-shadow: 0 0 0 4px rgba(61, 255, 162, .2), 0 0 24px rgba(61, 255, 162, .45);
+  animation: v-wave .6s ease both;
+}
+.vcard[data-state="success"] .tile:nth-child(2) { animation-delay: .06s; }
+.vcard[data-state="success"] .tile:nth-child(3) { animation-delay: .12s; }
+.vcard[data-state="success"] .tile:nth-child(4) { animation-delay: .18s; }
+.vcard[data-state="success"] .tile:nth-child(5) { animation-delay: .24s; }
+.vcard[data-state="success"] .tile:nth-child(6) { animation-delay: .30s; }
+@keyframes v-wave { 40% { transform: translateY(-12px) scale(1.08); } }
+
+/* ---------- Small screens ---------- */
+@media (max-width: 380px) {
+  .vcard .tiles { gap: 7px; }
+  .vcard .tile { width: 43px; height: 56px; font-size: 1.45rem; }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .vcard, .vcard *, .vcard *::before { animation: none !important; transition: none !important; }
+}
+  </style>
+</head>
+<body class="verify-page">
+  <div class="topbar">Verify account</div>
+
+  <main class="vcard" id="card" data-state="idle">
+    <h1>Check your email</h1>
+    <p class="vsub">We sent a 6-digit code to <strong id="emailText">your email</strong>.</p>
+
+    <div class="tiles" id="tiles" role="group" aria-label="6-digit verification code">
+      <input class="tile" inputmode="numeric" autocomplete="one-time-code" aria-label="Digit 1">
+      <input class="tile" inputmode="numeric" autocomplete="off" aria-label="Digit 2">
+      <input class="tile" inputmode="numeric" autocomplete="off" aria-label="Digit 3">
+      <input class="tile" inputmode="numeric" autocomplete="off" aria-label="Digit 4">
+      <input class="tile" inputmode="numeric" autocomplete="off" aria-label="Digit 5">
+      <input class="tile" inputmode="numeric" autocomplete="off" aria-label="Digit 6">
+    </div>
+
+    <div class="vprogress" aria-hidden="true"><i id="bar"></i></div>
+    <p class="vstatus" id="status" role="status" aria-live="polite">Enter the code from your email.</p>
+
+    <button class="vbtn" id="verifyBtn" type="button" disabled>Verify account</button>
+
+    <div class="vrow">
+      <button class="vlink" id="pasteBtn" type="button">Paste code</button>
+      <button class="vlink" id="resendBtn" type="button" disabled>Resend code</button>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/bg-rotator.js"></script>
+  <script src="/js/verify.js"></script>
 </body>
 </html>

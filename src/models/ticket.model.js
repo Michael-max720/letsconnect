@@ -58,7 +58,9 @@ async function findByIdWithDetails(ticketId) {
 
 async function findByQrToken(qrToken) {
   const [rows] = await pool.query(
-    `SELECT t.*, e.event_id, e.title AS event_title, e.event_date
+        `SELECT t.*, e.event_id, e.title AS event_title, e.event_date,
+            e.age_min, e.family_friendly, e.status AS event_status,
+            tc.name AS category_name
      FROM tickets t
      JOIN ticket_categories tc ON t.category_id = tc.category_id
      JOIN events e ON tc.event_id = e.event_id

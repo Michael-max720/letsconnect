@@ -26,7 +26,12 @@ async function sendTicketConfirmation({ toEmail, eventTitle, eventDate, venue, t
     `,
   });
 }
-async function sendOtpEmail({ toEmail, code }) {
+async function sendOtpEmail({ toEmail, code, userId }) {
+  // One-tap link: opens the verify page with the email and code already filled in.
+  // Set APP_URL in .env (for example your ngrok domain) so the link works from a phone.
+  const base = (process.env.APP_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, '');
+  const link = `${base}/verify.html?userId=${encodeURIComponent(userId)}&email=${encodeURIComponent(toEmail)}&code=${encodeURIComponent(code)}`;
+
   await transporter.sendMail({
     from: process.env.SMTP_FROM,
     to: toEmail,
@@ -35,7 +40,8 @@ async function sendOtpEmail({ toEmail, code }) {
       <h2>Verify your account</h2>
       <p>Your 6-digit verification code is:</p>
       <p style="font-size:28px; font-weight:bold; letter-spacing:4px;">${code}</p>
-      <p>This code expires in 10 minutes.</p>
+      <p><a href="${link}" style="display:inline-block; padding:12px 22px; background:#1F3864; color:#ffffff; text-decoration:none; border-radius:8px; font-weight:bold;">Verify my account</a></p>
+      <p>This code expires in 10 minutes. If you did not create an account, ignore this email.</p>
     `,
   });
 }

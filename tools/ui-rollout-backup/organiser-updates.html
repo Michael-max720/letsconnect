@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Follower updates - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <a href="/organiser-dashboard.html" aria-label="Back to dashboard">&larr;</a>
+  <span>Follower updates</span>
+  <span></span>
+</div>
+<div class="container" style="max-width:520px;" id="main">
+  <p id="follower-line" class="detail-meta" style="margin-top:16px;"></p>
+  <div id="msg" class="alert" style="display:none;" role="status"></div>
+
+  <form id="update-form">
+    <div class="field">
+      <label for="u-title">Title</label>
+      <input type="text" id="u-title" maxlength="160" placeholder="e.g. Early bird tickets are live" required>
+    </div>
+    <div class="field">
+      <label for="u-body">Message <span style="font-weight:400;">(optional)</span></label>
+      <textarea id="u-body" rows="3" maxlength="1000"></textarea>
+    </div>
+    <div class="field">
+      <label for="u-event">About an event <span style="font-weight:400;">(optional)</span></label>
+      <select id="u-event"><option value="">No specific event</option></select>
+    </div>
+    <button type="submit" class="btn btn-primary" id="post-btn">Post to followers</button>
+  </form>
+
+  <h2 style="font-size:1.125rem; margin-top:28px;">Your past updates</h2>
+  <div id="history">Loading...</div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script>
+function safe(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+const TYPE_LABEL = {
+  new_event: { text: 'New event', cls: 'badge-info' },
+  cancelled: { text: 'Cancelled', cls: 'badge-danger' },
+  post: { text: 'News', cls: 'badge-success' },
+};
+
+function say(text, ok) {
+  const box = document.getElementById('msg');
+  box.textContent = text;
+  box.className = 'alert ' + (ok ? 'alert-success' : 'alert-error');
+  box.style.display = 'block';
+}
+
+async function loadHistory() {
+  const { followers, updates } = await api('/social/updates/mine');
+  document.getElementById('follower-line').textContent =
+    followers === 1 ? '1 person follows you' : followers + ' people follow you';
+  document.getElementById('history').innerHTML = updates.length
+    ? updates.map((u) => {
+        const type = TYPE_LABEL[u.type] || TYPE_LABEL.post;
+        const when = new Date(u.created_at).toLocaleDateString(loadSettings().language, { day: 'numeric', month: 'short', year: 'numeric' });
+        return `
+          <div class="card update-card">
+            <div class="update-head"><strong>${safe(u.title)}</strong><span class="badge ${type.cls}">${type.text}</span></div>
+            ${u.body ? `<p class="update-body">${safe(u.body)}</p>` : ''}
+            <div class="update-meta">${when}</div>
+          </div>`;
+      }).join('')
+    : '<p style="color:var(--sub);">Nothing posted yet. New events and cancellations are posted to your followers automatically.</p>';
+}
+
+async function loadEvents() {
+  const { events } = await api('/events/mine');
+  const select = document.getElementById('u-event');
+  events.filter((e) => e.status === 'published').forEach((e) => {
+    const opt = document.createElement('option');
+    opt.value = e.event_id;
+    opt.textContent = e.title;
+    select.appendChild(opt);
+  });
+}
+
+document.getElementById('update-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('post-btn');
+  btn.disabled = true;
+  try {
+    const res = await api('/social/updates', {
+      method: 'POST',
+      body: JSON.stringify({
+        title: document.getElementById('u-title').value,
+        body: document.getElementById('u-body').value,
+        eventId: document.getElementById('u-event').value || null,
+      }),
+    });
+    say(res.message, true);
+    document.getElementById('update-form').reset();
+    loadHistory();
+  } catch (err) {
+    say(err.message, false);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+Promise.all([loadHistory(), loadEvents()]).catch(() => {
+  say('Please log in as an organiser to post updates.', false);
+});
+renderNav('home');
+</script>
+</body>
+</html>

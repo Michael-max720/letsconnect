@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Updates - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
+</head>
+<body>
+<div class="topbar"><span>Updates</span></div>
+<div class="container" id="main" style="max-width:720px;">
+  <div id="login-prompt" class="alert alert-info" style="display:none; margin-top:16px;">
+    Log in as an attendee to follow organisers and see their updates.
+    <div class="share-row" style="margin:10px 0 0;">
+      <a class="btn btn-primary" id="login-link" href="/login.html">Log in</a>
+      <a class="btn btn-outline" id="signup-link" href="/register.html">Sign up</a>
+    </div>
+  </div>
+
+  <div id="content">
+    <h2 class="section-title" style="margin-top:16px;">New from organisers you follow</h2>
+    <div id="feed">Loading...</div>
+
+    <h2 class="section-title" style="margin-top:24px;">Organisers you follow</h2>
+    <div id="following">Loading...</div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script>
+function safe(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+const TYPE_LABEL = {
+  new_event: { text: 'New event', cls: 'badge-info' },
+  cancelled: { text: 'Cancelled', cls: 'badge-danger' },
+  post: { text: 'News', cls: 'badge-success' },
+};
+
+function feedCard(u) {
+  const type = TYPE_LABEL[u.type] || TYPE_LABEL.post;
+  const when = new Date(u.created_at).toLocaleDateString(loadSettings().language, { day: 'numeric', month: 'short', year: 'numeric' });
+  const link = u.event_id ? `<a class="update-link" href="/event-details.html?id=${u.event_id}">View event</a>` : '';
+  return `
+    <div class="card update-card">
+      <div class="update-head">
+        <strong>${safe(u.title)}</strong>
+        <span class="badge ${type.cls}">${type.text}</span>
+      </div>
+      ${u.body ? `<p class="update-body">${safe(u.body)}</p>` : ''}
+      <div class="update-meta">
+        <a class="update-link" href="/organiser.html?id=${u.organiser_id}">${safe(u.organiser_name)}</a> &middot; ${when} ${link}
+      </div>
+    </div>`;
+}
+
+function followingRow(o) {
+  const n = Number(o.followers);
+  return `
+    <div class="card update-card">
+      <div class="update-head">
+        <a class="update-link" href="/organiser.html?id=${o.user_id}"><strong>${safe(o.name)}</strong></a>
+        <button type="button" class="btn btn-outline unfollow-btn" data-id="${o.user_id}">Unfollow</button>
+      </div>
+      <div class="update-meta">${n === 1 ? '1 follower' : n + ' followers'}</div>
+    </div>`;
+}
+
+async function load() {
+  const [feedRes, followRes] = await Promise.all([api('/social/feed'), api('/social/following')]);
+
+  document.getElementById('feed').innerHTML = feedRes.updates.length
+    ? feedRes.updates.map(feedCard).join('')
+    : '<p style="color:var(--sub);">Nothing new yet. When organisers you follow post news or publish events, it shows up here.</p>';
+
+  document.getElementById('following').innerHTML = followRes.organisers.length
+    ? followRes.organisers.map(followingRow).join('')
+    : '<p style="color:var(--sub);">You are not following anyone yet. Open an organiser from any event and tap Follow.</p>';
+
+  // Everything shown has now been seen, so the bell badge clears
+  localStorage.setItem('lc_updates_seen', new Date().toISOString());
+}
+
+document.getElementById('following').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.unfollow-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  try {
+    await api('/social/organisers/' + btn.dataset.id + '/follow', { method: 'DELETE' });
+    load();
+  } catch (err) {
+    btn.disabled = false;
+    alert(err.message);
+  }
+});
+
+const nextQ = '?next=' + encodeURIComponent(window.location.pathname);
+document.getElementById('login-link').href = '/login.html' + nextQ;
+document.getElementById('signup-link').href = '/register.html' + nextQ;
+
+load().catch(() => {
+  document.getElementById('content').style.display = 'none';
+  document.getElementById('login-prompt').style.display = 'block';
+});
+renderNav('updates');
+</script>
+</body>
+</html>

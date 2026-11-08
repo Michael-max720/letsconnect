@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Processing payment - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="topbar">Processing payment</div>
+<div class="container" style="max-width:420px; text-align:center; padding-top:60px;">
+  <div id="spinner" style="width:56px; height:56px; border:4px solid var(--navy-light); border-top-color:var(--navy); border-radius:50%; margin:0 auto 24px; animation:spin 0.9s linear infinite;"></div>
+  <p id="status-text">Check your phone and enter your M-Pesa PIN...</p>
+  <a href="/events.html" class="btn-link">Cancel and go back</a>
+</div>
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+
+<script src="/js/api.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const transactionId = params.get('transactionId');
+let attempts = 0;
+
+async function poll() {
+  attempts++;
+  try {
+    const { status } = await api('/payments/status/' + transactionId);
+    if (status === 'confirmed') {
+      window.location.href = '/payment-success.html?transactionId=' + transactionId;
+      return;
+    }
+    if (status === 'failed') {
+      document.getElementById('status-text').textContent = 'Payment failed or was cancelled.';
+      document.getElementById('spinner').style.display = 'none';
+      return;
+    }
+  } catch (err) {
+    // keep polling even if one check fails
+  }
+  if (attempts > 40) { // ~2 minutes
+    document.getElementById('status-text').textContent = 'This is taking a while. Check My Tickets shortly.';
+    document.getElementById('spinner').style.display = 'none';
+    return;
+  }
+  setTimeout(poll, 3000);
+}
+
+poll();
+</script>
+</body>
+</html>

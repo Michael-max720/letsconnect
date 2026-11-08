@@ -5,54 +5,52 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Scan ticket - Lets Connect</title>
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
 </head>
 <body>
 <div class="topbar">Scan ticket</div>
-<div id="app-nav"></div>
-<div class="container" style="max-width:420px;">
+<div class="container" id="main" style="max-width:480px;">
   <div class="card" id="my-events-card">
-  <strong>You're checking in guests for:</strong>
-  <div id="my-events-list" style="margin-top:8px;"></div>
-</div>
-  <div class="field">
-    <label>Ticket QR token</label>
-    <input type="text" id="qrToken" placeholder="Paste or type the ticket's QR token">
+    <strong>You're checking in guests for:</strong>
+    <div id="my-events-list" style="margin-top:8px;"></div>
   </div>
-  <button class="btn btn-primary" id="scan-btn">Scan</button>
 
-  <div id="result" style="margin-top:20px;"></div>
+  <form id="scan-form" autocomplete="off">
+    <div class="field">
+      <label for="qrToken">Ticket code</label>
+      <input type="text" id="qrToken" placeholder="Type or paste the ticket's code" autocomplete="off" autocapitalize="off" spellcheck="false" autofocus>
+    </div>
+    <button type="submit" class="btn btn-primary" id="scan-btn">Check ticket</button>
+  </form>
 
-  <h3 style="margin-top:32px;">Today's scans</h3>
+  <div id="result" role="status" aria-live="assertive" style="margin-top:20px;"></div>
+
+  <h2 style="font-size:1.125rem; margin-top:32px;">Today's scans</h2>
   <div id="history"></div>
 </div>
 
 <script src="/js/api.js"></script>
 <script src="/js/nav.js"></script>
+<script src="/js/footer.js"></script>
 <script>
-  const EYE_OPEN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
-const EYE_CLOSED = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0112 20c-7 0-11-8-11-8a20.3 20.3 0 015.06-5.94M9.9 4.24A10.94 10.94 0 0112 4c7 0 11 8 11 8a20.3 20.3 0 01-2.16 3.19M14.12 14.12a3 3 0 11-4.24-4.24"/><line x₁="₁" y₁="₁" x₂="₂" y₂="₂"/></svg>';
+const resultEl = document.getElementById('result');
+const input = document.getElementById('qrToken');
 
-function togglePassword(fieldId, btn) {
-  const input = document.getElementById(fieldId);
-  input.type = input.type === 'password' ? 'text' : 'password';
-  btn.innerHTML = input.type === 'password' ? EYE_OPEN : EYE_CLOSED;
+// One large, high-contrast answer: icon + words + colour, so it can be read at a glance in a crowd
+function showResult(kind, title, lines) {
+  const mark = { ok: '&#10003;', warn: '!', bad: '&#10005;' }[kind];
+  resultEl.innerHTML = `
+    <div class="scan-result scan-${kind}">
+      <div class="scan-icon" aria-hidden="true">${mark}</div>
+      <div class="scan-title">${esc(title)}</div>
+      ${lines.join('')}
+    </div>`;
+  // a short buzz on phones: one pulse for "let in", a double pulse for "stop"
+  if (navigator.vibrate) navigator.vibrate(kind === 'ok' ? 80 : [120, 80, 120]);
 }
-startBackgroundRotator([
-  'https://www.pexels.com/photo/a-person-walking-while-carrying-a-backpack-10521177/',
-  'https://images.pexels.com/photos/20179680/pexels-photo-20179680.jpeg',
-  'https://images.pexels.com/photos/30174882/pexels-photo-30174882.jpeg',
-  'https://images.unsplash.com/photo-1573152958734-1922c188fba3?q=80&w=1032&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=1007&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://images.pexels.com/photos/4555454/pexels-photo-4555454.jpeg',
-  'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://unsplash.com/photos/man-playing-drums-PKmjFH8dGMU'
-]);
-</script>
-<script>
-async function scan() {
-  const token = document.getElementById('qrToken').value.trim();
-  if (!token) return;
-  const resultEl = document.getElementById('result');
+
+async function scan(token) {
   try {
     const res = await fetch('/api/gate/scan', {
       method: 'POST',
@@ -60,41 +58,69 @@ async function scan() {
       credentials: 'include',
       body: JSON.stringify({ qrToken: token }),
     });
-    const data = await res.json();
-    const kind = data.result === 'valid' ? 'success' : 'error';
-    resultEl.innerHTML = `<div class="alert alert-${kind}">${data.message}</div>`;
+    const data = await res.json().catch(() => ({}));
+
+    if (data.result === 'valid') {
+      const lines = [];
+      if (data.eventTitle) lines.push(`<div class="scan-line">${esc(data.eventTitle)}${data.categoryName ? ' &middot; ' + esc(data.categoryName) : ''}</div>`);
+      if (data.ageMin > 0) {
+        // the age limit the organiser set for this event, shown where the agent cannot miss it
+        lines.push(`<div class="scan-age">Age limit ${Number(data.ageMin)}+<br><span>Please check the guest's age before they enter.</span></div>`);
+      } else if (data.familyFriendly) {
+        lines.push('<div class="scan-line">Family friendly event</div>');
+      }
+      showResult('ok', 'Entry approved', lines);
+    } else if (data.result === 'already_used') {
+      const when = data.usedAt ? new Date(data.usedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const lines = [];
+      if (data.eventTitle) lines.push(`<div class="scan-line">${esc(data.eventTitle)}</div>`);
+      if (when) lines.push(`<div class="scan-line">Scanned in at ${esc(when)}</div>`);
+      showResult('warn', 'Already used', lines);
+    } else {
+      showResult('bad', data.message || data.error || 'Not valid', []);
+    }
   } catch (err) {
-    resultEl.innerHTML = `<div class="alert alert-error">Could not reach the server.</div>`;
+    showResult('bad', 'Could not reach the server', ['<div class="scan-line">Check your connection and try again.</div>']);
   }
-  document.getElementById('qrToken').value = '';
   loadHistory();
 }
+
+document.getElementById('scan-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const token = input.value.trim();
+  if (!token) { input.focus(); return; }
+  input.value = '';
+  scan(token);
+  input.focus();               // ready for the next guest straight away
+});
 
 async function loadHistory() {
   try {
     const { scans } = await api('/gate/history');
-    document.getElementById('history').innerHTML = scans.map(s => `
-      <div class="card" style="display:flex; justify-content:space-between;">
-        <span>Ticket ${s.ticket_id || '—'}</span>
-        <span class="badge ${s.result === 'valid' ? 'badge-success' : (s.result === 'already_used' ? 'badge-warn' : 'badge-danger')}">${s.result}</span>
-      </div>
-    `).join('');
+    document.getElementById('history').innerHTML = scans.map((s) => `
+      <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>Ticket ${esc(s.ticket_id || '—')}</span>
+        <span class="badge ${s.result === 'valid' ? 'badge-success' : (s.result === 'already_used' ? 'badge-warn' : 'badge-danger')}">${esc(s.result)}</span>
+      </div>`).join('');
   } catch (err) { /* not logged in yet */ }
 }
+
 async function loadMyEvents() {
-  const { events } = await api('/gate-assignments/mine');
   const list = document.getElementById('my-events-list');
-  if (events.length === 0) {
-    list.innerHTML = '<span style="color:var(--sub); font-size:13px;">No events assigned yet. Contact your organiser.</span>';
-  } else {
-    list.innerHTML = events.map(e => `<span class="badge badge-info" style="margin:2px;">${e.title}</span>`).join('');
+  try {
+    const { events } = await api('/gate-assignments/mine');
+    list.innerHTML = events.length === 0
+      ? '<span style="color:var(--sub); font-size:0.8125rem;">No events assigned yet. Contact your organiser.</span>'
+      : events.map((e) => `<span class="badge badge-info" style="margin:2px;">${esc(e.title)}</span>`).join('');
+  } catch (err) {
+    list.innerHTML = '<span style="color:var(--danger-text); font-size:0.8125rem;">Please log in as a gate agent.</span>';
   }
 }
-loadMyEvents();
 
-document.getElementById('scan-btn').addEventListener('click', scan);
+loadMyEvents();
 loadHistory();
 renderNav('home');
+input.focus();
 </script>
 </body>
 </html>

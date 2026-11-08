@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create event - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/settings.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <a href="/organiser-dashboard.html" aria-label="Back to dashboard">&larr;</a>
+  <span>Create event</span>
+  <span></span>
+</div>
+<div class="container" style="max-width:420px;">
+  <div id="error-box" class="alert alert-error" style="display:none;" role="alert"></div>
+  <form id="event-form">
+    <div class="field">
+      <label for="coverImageUrl">Cover image URL</label>
+      <div class="img-preview" id="img-preview">No image yet &mdash; paste a link below</div>
+      <input type="url" id="coverImageUrl" placeholder="https://example.com/poster.jpg">
+    </div>
+    <div class="field"><label for="title">Event title</label><input type="text" id="title" required></div>
+    <div class="field"><label for="category">Category</label>
+      <select id="category">
+        <option>Music</option><option>Safari</option><option>Conference</option><option>Sports</option><option>Comedy</option>
+      </select>
+    </div>
+    <div class="field"><label for="description">Description</label><textarea id="description" rows="3"></textarea></div>
+    <div class="field"><label for="venue">Venue</label><input type="text" id="venue" required></div>
+    <div class="field">
+      <label for="region">Town / region</label>
+      <input type="text" id="region" list="region-list" placeholder="e.g. Nairobi" required autocomplete="off">
+      <datalist id="region-list">
+        <option value="Nairobi"><option value="Mombasa"><option value="Kisumu"><option value="Nakuru">
+        <option value="Eldoret"><option value="Nyeri"><option value="Naivasha"><option value="Diani">
+        <option value="Malindi"><option value="Maasai Mara"><option value="Thika"><option value="Machakos">
+      </datalist>
+    </div>
+    <div class="field"><label for="eventDate">Date and time</label><input type="datetime-local" id="eventDate" required></div>
+
+    <div class="field">
+      <label for="ageMin">Age restriction</label>
+      <select id="ageMin">
+        <option value="0">All ages</option>
+        <option value="12">12+</option>
+        <option value="16">16+</option>
+        <option value="18">18+</option>
+        <option value="21">21+</option>
+      </select>
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="familyFriendly">
+      <label for="familyFriendly">Family friendly (suitable for children)</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="margin-top:12px;">Next: add tickets</button>
+  </form>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const preview = document.getElementById('img-preview');
+document.getElementById('coverImageUrl').addEventListener('input', (e) => {
+  const url = e.target.value.trim();
+  if (url) {
+    preview.style.backgroundImage = `url('${url}')`;
+    preview.style.backgroundSize = 'cover';
+    preview.style.backgroundPosition = 'center';
+    preview.textContent = '';
+  } else {
+    preview.style.backgroundImage = 'none';
+    preview.textContent = 'No image yet — paste a link below';
+  }
+});
+
+// Constraint: an event restricted to 16+ cannot be marked family friendly.
+const ageSelect = document.getElementById('ageMin');
+const familyBox = document.getElementById('familyFriendly');
+function syncFamilyBox() {
+  const restricted = Number(ageSelect.value) >= 16;
+  if (restricted) familyBox.checked = false;
+  familyBox.disabled = restricted;
+}
+ageSelect.addEventListener('change', syncFamilyBox);
+
+// Convert the server's date to the "local time" format datetime-local expects.
+function toLocalInput(iso) {
+  const d = new Date(iso);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
+const params = new URLSearchParams(window.location.search);
+const editingEventId = params.get('eventId');
+
+if (editingEventId) {
+  document.querySelector('button[type="submit"]').textContent = 'Save changes';
+  api('/events/' + editingEventId).then(({ event }) => {
+    document.getElementById('title').value = event.title;
+    document.getElementById('category').value = event.category || 'Music';
+    document.getElementById('description').value = event.description || '';
+    document.getElementById('venue').value = event.venue || '';
+    document.getElementById('region').value = event.region || '';
+    document.getElementById('coverImageUrl').value = event.cover_image_url || '';
+    document.getElementById('eventDate').value = toLocalInput(event.event_date);
+    ageSelect.value = String(event.age_min || 0);
+    familyBox.checked = !!event.family_friendly;
+    syncFamilyBox();
+    if (event.cover_image_url) {
+      document.getElementById('coverImageUrl').dispatchEvent(new Event('input'));
+    }
+  });
+}
+
+document.getElementById('event-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const payload = {
+    title: document.getElementById('title').value,
+    category: document.getElementById('category').value,
+    description: document.getElementById('description').value,
+    venue: document.getElementById('venue').value,
+    region: document.getElementById('region').value.trim(),
+    ageMin: Number(ageSelect.value),
+    familyFriendly: familyBox.checked,
+    eventDate: document.getElementById('eventDate').value.replace('T', ' ') + ':00',
+    coverImageUrl: document.getElementById('coverImageUrl').value.trim() || null,
+  };
+  try {
+    if (editingEventId) {
+      await api('/events/' + editingEventId, { method: 'PUT', body: JSON.stringify(payload) });
+      window.location.href = '/organiser-dashboard.html';
+    } else {
+      const data = await api('/events', { method: 'POST', body: JSON.stringify(payload) });
+      window.location.href = '/organiser-create-ticket.html?eventId=' + data.eventId;
+    }
+  } catch (err) {
+    showError(err.message);
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event details - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <a href="/events.html" aria-label="Back to events">&larr;</a>
+  <span>Event details</span>
+  <span></span>
+</div>
+<div class="container" id="main" style="max-width:720px;">Loading...</div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script src="/js/posters.js"></script>
+<script src="/js/reviews.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const eventId = params.get('id');
+let currentSession = null;
+
+const STATUS_LABEL = { closed: 'Closed', cancelled: 'Cancelled', sold_out: 'Sold out', coming_soon: 'Coming soon' };
+const STATUS_NOTICE = {
+  closed: { cls: 'alert-error', text: 'This event has ended or ticket sales have closed.' },
+  cancelled: { cls: 'alert-error', text: 'This event has been cancelled by the organiser. Tickets are no longer on sale.' },
+  sold_out: { cls: 'alert-warn', text: 'All tickets for this event are sold out.' },
+  coming_soon: { cls: 'alert-info', text: 'Tickets are not on sale yet. Please check back soon.' },
+};
+
+// Makes user-entered text safe to place inside innerHTML
+function safe(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function fmtShort(dateStr) {
+  return new Date(dateStr).toLocaleString(loadSettings().language, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+// What the user sees for each ticket category, and whether it can be chosen
+function categoryState(cat) {
+  const now = new Date();
+  const available = Number(cat.available);
+  if (cat.sales_end && new Date(cat.sales_end) < now) return { ok: false, text: 'Sales ended' };
+  if (cat.sales_start && new Date(cat.sales_start) > now) return { ok: false, text: 'On sale from ' + fmtShort(cat.sales_start) };
+  if (available <= 0) return { ok: false, text: 'Sold out' };
+  if (available <= 20) return { ok: true, text: `Only ${available} left`, low: true };
+  return { ok: true, text: `${available} available` };
+}
+
+let toastTimer;
+function toast(message) {
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 2500);
+}
+
+async function shareEvent(event) {
+  const url = window.location.href;
+  const text = `Check out ${event.title} on Lets Connect`;
+  if (navigator.share) {
+    try { await navigator.share({ title: event.title, text, url }); } catch (err) { /* user cancelled */ }
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('Link copied');
+  } catch (err) {
+    window.prompt('Copy this link:', url);
+  }
+}
+
+async function load() {
+  const content = document.getElementById('main');
+  try {
+    const { event, ticketCategories } = await api('/events/' + eventId + '/tickets');
+    document.title = event.title + ' - Lets Connect';
+
+    const lang = loadSettings().language;
+    const d = new Date(event.event_date);
+    const dow = d.toLocaleDateString(lang, { weekday: 'short' });
+    const day = d.getDate();
+    const mon = d.toLocaleDateString(lang, { month: 'short' });
+    const fullDate = d.toLocaleString(lang, {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    const status = event.sales_status || 'open';
+    const buyable = status === 'open';
+    const ribbon = STATUS_LABEL[status]
+      ? `<span class="ribbon ribbon-${status}">${STATUS_LABEL[status]}</span>` : '';
+    const thumbStyle = event.cover_image_url
+      ? `background-image:url('${safe(event.cover_image_url)}'); background-size:cover; background-position:center; animation:none;`
+      : '';
+
+    const place = [event.venue, event.region].filter(Boolean).join(', ');
+    const tags = [];
+    if (event.category) tags.push(`<span class="badge badge-info">${safe(event.category)}</span>`);
+    if (event.family_friendly) tags.push('<span class="badge badge-success">Family friendly</span>');
+    if (event.age_min > 0) tags.push(`<span class="badge badge-warn">${event.age_min}+ only</span>`);
+
+    const statusNotice = STATUS_NOTICE[status]
+      ? `<div class="alert ${STATUS_NOTICE[status].cls}" role="status">${STATUS_NOTICE[status].text}</div>` : '';
+    const ageNotice = event.age_min > 0
+      ? `<div class="alert alert-warn">This event is for guests aged ${event.age_min} and over.</div>` : '';
+
+    // Who is looking decides what the buy area offers
+    const role = currentSession ? currentSession.role : 'guest';
+    const nextUrl = encodeURIComponent(window.location.pathname + window.location.search);
+    const canPick = role === 'guest' || role === 'attendee';
+
+    const guestNote = role === 'guest'
+      ? `<div class="alert alert-info" style="margin-top:12px;">
+           <strong>Create a free account to buy tickets.</strong>
+           Attendee accounts are ready to use as soon as you verify your email.
+         </div>` : '';
+    const staffNote = !canPick
+      ? '<div class="alert alert-info" style="margin-top:12px;">Ticket purchases are for attendee accounts.</div>' : '';
+    const continueButton = canPick
+      ? `<button class="btn btn-primary" id="continue-btn" style="margin-top:12px;" disabled>${role === 'guest' ? 'Sign up to buy tickets' : 'Continue'}</button>` : '';
+    const guestLogin = role === 'guest'
+      ? `<a class="btn-link" href="/login.html?next=${nextUrl}">Already have an account? Log in</a>` : '';
+
+    const catsHtml = ticketCategories.length === 0
+      ? '<p style="color:var(--sub);">No ticket categories have been added yet.</p>'
+      : ticketCategories.map(cat => {
+          const st = categoryState(cat);
+          const disabled = !st.ok || !buyable;
+          return `
+            <label class="cat-option ${disabled ? 'is-disabled' : ''}">
+              <input type="radio" name="ticket-category" value="${cat.category_id}"
+                     data-price="${cat.price}" data-name="${safe(cat.name)}" ${disabled ? 'disabled' : ''}>
+              <span class="cat-info">
+                <strong>${safe(cat.name)}</strong>
+                <small class="${st.low ? 'low' : ''}">${st.text}</small>
+              </span>
+              <span class="cat-price">${formatPrice(cat.price)}</span>
+            </label>`;
+        }).join('');
+
+    content.innerHTML = `
+      <div class="event-thumb" style="height:200px; border-radius:12px; margin-top:16px; ${thumbStyle}">
+        <span class="date-badge"><span class="dow">${dow}</span><span class="day">${day}</span><span class="mon">${mon}</span></span>
+        ${ribbon}
+      </div>
+
+      <h1 class="detail-title">${safe(event.title)}</h1>
+            ${event.organiser_name ? `<p class="detail-meta">by <a class="update-link" href="/organiser.html?id=${event.organiser_id}">${safe(event.organiser_name)}</a></p>` : ''}
+      <p class="detail-meta">${fullDate}</p>
+      <p class="detail-meta">${safe(place)}</p>
+      <div class="tags" style="margin-top:10px;">${tags.join('')}</div>
+
+      <div class="share-row">
+        <button type="button" class="btn btn-outline" id="share-btn">Share</button>
+         <a class="btn btn-outline" id="wa-btn" target="_blank" rel="noopener">WhatsApp</a>
+        <button type="button" class="btn btn-outline save-btn" data-save-event="${event.event_id}" aria-pressed="false" hidden><span class="save-icon">${heartSvg}</span><span class="save-label"></span></button>
+      </div>
+
+      ${statusNotice}
+      ${ageNotice}
+
+      <p style="margin:0 0 24px; white-space:pre-line;">${safe(event.description || 'No description provided.')}</p>
+
+      <h2 style="font-size:1.125rem;">Select ticket category</h2>
+      <div id="categories" role="radiogroup" aria-label="Ticket category">${catsHtml}</div>
+
+      ${buyable ? guestNote + staffNote + continueButton + guestLogin : ''}
+
+      <section id="reviews" class="reviews" aria-label="Reviews"></section>
+      `;
+      renderReviews(document.getElementById('reviews'), { type: 'event', id: event.event_id });
+    // Share buttons
+    document.getElementById('share-btn').addEventListener('click', () => shareEvent(event));
+    const waText = `Check out ${event.title} on Lets Connect ${window.location.href}`;
+    document.getElementById('wa-btn').href = 'https://wa.me/?text=' + encodeURIComponent(waText);
+
+    // Category selection
+    let selected = null;
+    document.querySelectorAll('input[name="ticket-category"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        document.querySelectorAll('.cat-option').forEach(o => o.classList.remove('selected'));
+        radio.closest('.cat-option').classList.add('selected');
+        selected = { id: radio.value, price: radio.dataset.price, name: radio.dataset.name };
+        const btn = document.getElementById('continue-btn');
+        if (btn) btn.disabled = false;
+      });
+    });
+
+    const continueBtn = document.getElementById('continue-btn');
+    if (continueBtn) {
+      continueBtn.addEventListener('click', () => {
+        if (!selected) return;
+        if (role === 'guest') {
+          window.location.href = '/register.html?next=' + nextUrl;
+          return;
+        }
+        window.location.href = `/checkout.html?categoryId=${selected.id}&eventTitle=${encodeURIComponent(event.title)}&catName=${encodeURIComponent(selected.name)}&price=${selected.price}`;
+      });
+    }
+
+  } catch (err) {
+    console.error(err);
+    content.innerHTML = '<p style="color:var(--danger-text);">Could not load this event: ' + safe(err.message) + '</p>';
+  }
+}
+
+renderNav('home').catch(() => null).then((s) => { currentSession = s; load(); });
+</script>
+</body>
+</html>

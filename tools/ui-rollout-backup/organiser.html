@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Organiser - Lets Connect</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <a href="/events.html" aria-label="Back to events">&larr;</a>
+  <span>Organiser</span>
+  <span></span>
+</div>
+<div class="container" id="main">
+  <p id="load-error" class="alert alert-error" style="display:none; margin-top:16px;" role="alert"></p>
+
+  <section class="frosted-panel org-header" id="org-header" hidden>
+    <div class="avatar-circle" id="org-avatar"></div>
+    <h1 id="org-name"></h1>
+    <p class="detail-meta" id="org-followers" aria-live="polite"></p>
+    <div id="follow-area"></div>
+    <div id="follow-msg" class="alert alert-error" style="display:none; margin-top:12px;" role="alert"></div>
+  </section>
+
+  <h2 class="section-title" style="margin-top:20px;">Updates</h2>
+  <div id="updates">Loading...</div>
+
+  <h2 class="section-title" style="margin-top:20px;">Events</h2>
+  <div id="event-grid" class="event-grid"></div> 
+  <section id="reviews" class="reviews" aria-label="Reviews"></section>
+
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script src="/js/posters.js"></script>
+<script src="/js/reviews.js"></script>
+<script>
+const orgId = new URLSearchParams(window.location.search).get('id');
+const state = { following: false, followers: 0, role: null };
+
+const TYPE_LABEL = {
+  new_event: { text: 'New event', cls: 'badge-info' },
+  cancelled: { text: 'Cancelled', cls: 'badge-danger' },
+  post: { text: 'News', cls: 'badge-success' },
+};
+
+function followersText(n) {
+  return n === 1 ? '1 follower' : n + ' followers';
+}
+
+function updateCard(u) {
+  const type = TYPE_LABEL[u.type] || TYPE_LABEL.post;
+  const when = new Date(u.created_at).toLocaleDateString(loadSettings().language, { day: 'numeric', month: 'short', year: 'numeric' });
+  const link = u.event_id ? `<a class="update-link" href="/event-details.html?id=${u.event_id}">View event</a>` : '';
+  return `
+    <div class="card update-card">
+      <div class="update-head">
+        <strong>${safe(u.title)}</strong>
+        <span class="badge ${type.cls}">${type.text}</span>
+      </div>
+      ${u.body ? `<p class="update-body">${safe(u.body)}</p>` : ''}
+      <div class="update-meta">${when} ${link}</div>
+    </div>`;
+}
+
+function renderFollow() {
+  document.getElementById('org-followers').textContent = followersText(state.followers);
+  const area = document.getElementById('follow-area');
+  // Only attendees follow. Organisers, admins and gate agents just see the page.
+  if (state.role && state.role !== 'attendee') { area.innerHTML = ''; return; }
+
+  const hint = state.following
+    ? 'You will see their news and new events under Updates.'
+    : (state.role ? '' : 'Sign up free to follow organisers and get their updates.');
+  area.innerHTML = `
+    <button type="button" class="btn ${state.following ? 'btn-outline' : 'btn-primary'} follow-btn" id="follow-btn"
+            aria-pressed="${state.following}">${state.following ? 'Following ✓' : 'Follow'}</button>
+    <p class="field-hint">${hint}</p>`;
+  document.getElementById('follow-btn').addEventListener('click', toggleFollow);
+}
+
+async function toggleFollow() {
+  // Visitors are sent to sign up, and come straight back here afterwards
+  if (!state.role) {
+    window.location.href = '/register.html?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+    return;
+  }
+  const btn = document.getElementById('follow-btn');
+  const msg = document.getElementById('follow-msg');
+  msg.style.display = 'none';
+  btn.disabled = true;
+  try {
+    const res = await api('/social/organisers/' + orgId + '/follow', { method: state.following ? 'DELETE' : 'POST' });
+    state.following = res.following;
+    state.followers = res.followers;
+    renderFollow();
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.style.display = 'block';
+    btn.disabled = false;
+  }
+}
+
+async function load() {
+  try {
+    const data = await api('/social/organisers/' + orgId);
+    state.following = data.isFollowing;
+    state.followers = data.followers;
+    state.role = data.viewerRole;
+
+    document.title = data.organiser.name + ' - Lets Connect';
+    document.getElementById('org-name').textContent = data.organiser.name;
+    document.getElementById('org-avatar').textContent = data.organiser.name.charAt(0).toUpperCase();
+    document.getElementById('org-header').hidden = false;
+    renderFollow();
+
+    document.getElementById('updates').innerHTML = data.updates.length
+      ? data.updates.map(updateCard).join('')
+      : '<p style="color:var(--sub);">No updates yet.</p>';
+  } catch (err) {
+    const box = document.getElementById('load-error');
+    box.textContent = 'Could not load this organiser: ' + err.message;
+    box.style.display = 'block';
+    document.getElementById('updates').innerHTML = '';
+    return;
+  }
+
+  try {
+    const { events } = await api('/events?organiserId=' + encodeURIComponent(orgId));
+    document.getElementById('event-grid').innerHTML = events.length
+      ? events.map(cardHtml).join('')
+      : '<p class="empty">This organiser has no events yet.</p>';
+  } catch (err) {
+    document.getElementById('event-grid').innerHTML = '<p class="empty">Could not load events.</p>';
+  }
+}
+
+load();
+renderNav('home');
+renderReviews(document.getElementById('reviews'), { type: 'organiser', id: new URLSearchParams(window.location.search).get('id') });      
+</script>
+</body>
+</html>

@@ -1,6 +1,29 @@
 // src/controllers/auth.controller.js
 const userModel = require('../models/user.model');
 const { generateOtp } = require('../utils/otp.util');
+const { sendOtpEmail } = require('../utils/email.util');
+
+// --- OTP protection (kept in memory: simple, no extra DB columns needed) ---
+// These reset when the server restarts, which is fine for this project.
+const MAX_WRONG_ATTEMPTS = 5;          // wrong guesses allowed per code
+const RESEND_COOLDOWN_MS = 60 * 1000;  // minimum gap between codes for one user
+const wrongAttempts = new Map();       // userId -> number of wrong guesses
+const lastSentAt = new Map();          // userId -> time the last code was sent
+
+// Creates a new code, saves it, resets the guess counter and emails it.
+async function issueOtp(user) {
+  const { code, expiresAt } = generateOtp();
+  await userModel.setOtp(user.user_id, code, expiresAt);
+  wrongAttempts.delete(user.user_id);
+  lastSentAt.set(user.user_id, Date.now());
+  // Not awaited on purpose: a slow or unreachable SMTP server must not make
+  // sign-up or resend hang. The code is already saved, so the user can still
+  // type it in; if sending fails we log it for development.
+  sendOtpEmail({ toEmail: user.email, code, userId: user.user_id }).catch((emailErr) => {
+    console.error('OTP email failed to send:', emailErr.message);
+    console.log(`[DEV ONLY fallback] OTP for ${user.email}: ${code}`);
+  });
+}
 
 async function register(req, res) {
   const { name, password, role } = req.body;
@@ -40,29 +63,47 @@ async function register(req, res) {
     name, username, email, phone, password, role: safeRole,
   });
 
-  const { code, expiresAt } = generateOtp();
-  await userModel.setOtp(userId, code, expiresAt);
-
-  // Module C will replace this with a real email/SMS send.
-  // For now we log it so you can test the flow end to end.
-  console.log(`[DEV ONLY] OTP for ${email}: ${code}`);
+  // Send the first code by email (falls back to the console if SMTP fails).
+  await issueOtp({ user_id: userId, email });
 
   res.status(201).json({ message: 'Account created. Check your email for a verification code.', userId });
 }
 
 async function verifyOtp(req, res) {
-  const { userId, code } = req.body;
+  const userId = Number(req.body.userId);
+  // Keep digits only, so a pasted code with spaces still works.
+  const code = String(req.body.code || '').replace(/\D/g, '');
+
+  if (!userId || code.length !== 6) {
+    return res.status(400).json({ error: 'Enter the 6-digit code.' });
+  }
 
   const user = await userModel.findById(userId);
   if (!user) return res.status(404).json({ error: 'User not found.' });
 
-  if (user.otp_code !== code) {
-    return res.status(400).json({ error: 'Incorrect code.' });
+  if (!user.otp_code) {
+    return res.status(400).json({ error: 'No active code. Request a new one, or log in if you already verified.' });
   }
   if (new Date(user.otp_expires_at) < new Date()) {
     return res.status(400).json({ error: 'Code expired. Request a new one.' });
   }
 
+  const used = wrongAttempts.get(userId) || 0;
+  if (used >= MAX_WRONG_ATTEMPTS) {
+    return res.status(429).json({ error: 'Too many wrong attempts. Request a new code.' });
+  }
+
+  if (user.otp_code !== code) {
+    wrongAttempts.set(userId, used + 1);
+    const left = MAX_WRONG_ATTEMPTS - (used + 1);
+    return res.status(400).json({
+      error: left > 0
+        ? `Incorrect code. ${left} ${left === 1 ? 'try' : 'tries'} left.`
+        : 'Too many wrong attempts. Request a new code.',
+    });
+  }
+
+  wrongAttempts.delete(userId);
   const newStatus = await userModel.verifyOtpAndActivate(userId);
   res.json({ message: 'Account verified.', status: newStatus });
 }
@@ -99,21 +140,22 @@ function logout(req, res) {
   });
 }
 async function resendOtp(req, res) {
-  const { userId } = req.body;
-  const user = await userModel.findById(userId);
+  const userId = Number(req.body.userId);
+  const user = userId ? await userModel.findById(userId) : null;
   if (!user) return res.status(404).json({ error: 'User not found.' });
 
-  const { code, expiresAt } = generateOtp();
-  await userModel.setOtp(userId, code, expiresAt);
-
-  const { sendOtpEmail } = require('../utils/email.util');
-  try {
-    await sendOtpEmail({ toEmail: user.email, code });
-  } catch (emailErr) {
-    console.error('OTP email failed to send:', emailErr.message);
-    console.log(`[DEV ONLY fallback] OTP for ${user.email}: ${code}`);
+  // Only accounts still waiting for verification can get a code.
+  // This stops someone spamming the inbox of an already active user.
+  if (user.status !== 'pending_verification') {
+    return res.status(400).json({ error: 'This account is already verified. You can log in.' });
   }
 
+  const waitMs = RESEND_COOLDOWN_MS - (Date.now() - (lastSentAt.get(userId) || 0));
+  if (waitMs > 0) {
+    return res.status(429).json({ error: `Please wait ${Math.ceil(waitMs / 1000)}s before requesting another code.` });
+  }
+
+  await issueOtp(user);
   res.json({ message: 'A new code has been sent.' });
 }
 async function getCurrentUser(req, res) {

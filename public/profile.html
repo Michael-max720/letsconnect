@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Profile - Lets Connect</title>
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
 </head>
 <body>
 <div class="topbar">Profile</div>
@@ -13,6 +15,7 @@
 
 <script src="/js/api.js"></script>
 <script src="/js/nav.js"></script>
+<script src="/js/footer.js"></script>
 <script>
 const roleLabels = {
   attendee: 'Attendee',
@@ -30,12 +33,12 @@ async function load() {
     content.innerHTML = `
       <div class="card" style="text-align:center; margin-top:16px;">
         <div class="avatar-circle">${initials}</div>
-        <strong style="font-size:16px;">${session.name}</strong>
-        <div style="color:var(--sub); font-size:13px; margin-top:2px;">${roleLabels[session.role] || session.role}</div>
+        <strong style="font-size:1rem;">${esc(session.name)}</strong>
+        <div style="color:var(--sub); font-size:0.8125rem; margin-top:2px;">${roleLabels[session.role] || session.role}</div>
       </div>
 
       <div class="card">
-        <div class="profile-row"><span class="k">Email</span><span>${session.email}</span></div>
+        <div class="profile-row"><span class="k">Email</span><span>${esc(session.email)}</span></div>
         <div class="profile-row"><span class="k">Role</span><span>${roleLabels[session.role] || session.role}</span></div>
         <div class="profile-row"><span class="k">User ID</span><span>#${session.userId}</span></div>
       </div>

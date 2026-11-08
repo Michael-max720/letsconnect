@@ -5,41 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin - Lets Connect</title>
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
 </head>
 <body>
 <div class="topbar">Platform overview</div>
 <div id="app-nav"></div>
 <div class="container">
+  <div style="display:flex; gap:8px; margin-bottom:16px;">
+    <a href="/reviews.html" class="btn btn-outline" style="flex:1;">Platform reviews</a>
+  </div>
   <div class="stat-grid" id="stats"></div>
   <h3>Needs attention</h3>
   <div id="pending-list">Loading...</div>
-  <div id="pending-list">Loading...</div>
+  
 <h3 style="margin-top:24px;">Gate Agent assignments</h3>
 <div id="pending-assignments">Loading...</div>
 </div>
 
 <script src="/js/api.js"></script>
 <script src="/js/nav.js"></script>
-<script>
-  const EYE_OPEN = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
-const EYE_CLOSED = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0112 20c-7 0-11-8-11-8a20.3 20.3 0 015.06-5.94M9.9 4.24A10.94 10.94 0 0112 4c7 0 11 8 11 8a20.3 20.3 0 01-2.16 3.19M14.12 14.12a3 3 0 11-4.24-4.24"/><line x₁="₁" y₁="₁" x₂="₂" y₂="₂"/></svg>';
-
-function togglePassword(fieldId, btn) {
-  const input = document.getElementById(fieldId);
-  input.type = input.type === 'password' ? 'text' : 'password';
-  btn.innerHTML = input.type === 'password' ? EYE_OPEN : EYE_CLOSED;
-}
-startBackgroundRotator([
-  'https://www.pexels.com/photo/a-person-walking-while-carrying-a-backpack-10521177/',
-  'https://images.pexels.com/photos/20179680/pexels-photo-20179680.jpeg',
-  'https://images.pexels.com/photos/30174882/pexels-photo-30174882.jpeg',
-  'https://images.unsplash.com/photo-1573152958734-1922c188fba3?q=80&w=1032&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?q=80&w=1007&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://images.pexels.com/photos/4555454/pexels-photo-4555454.jpeg',
-  'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  'https://unsplash.com/photos/man-playing-drums-PKmjFH8dGMU'
-]);
-</script>
+<script src="/js/footer.js"></script>
 <script>
 async function loadStats() {
   const { stats } = await api('/admin/stats');
@@ -60,8 +46,8 @@ async function loadPending() {
   }
   list.innerHTML = pending.map(u => `
     <div class="card">
-      <strong>${u.name}</strong>
-      <div style="font-size:13px; color:var(--sub); margin:4px 0 12px;">${u.email} &middot; ${u.role}</div>
+      <strong>${esc(u.name)}</strong>
+      <div style="font-size:0.8125rem; color:var(--sub); margin:4px 0 12px;">${esc(u.email)} &middot; ${u.role}</div>
       <div style="display:flex; gap:8px;">
         <button class="btn btn-outline" onclick="decide(${u.user_id}, 'reject')">Reject</button>
         <button class="btn btn-primary" onclick="decide(${u.user_id}, 'approve')">Approve</button>
@@ -73,7 +59,7 @@ async function loadPendingAssignments() {
   const { pending } = await api('/gate-assignments/pending');
   document.getElementById('pending-assignments').innerHTML = pending.map(p => `
     <div class="card">
-      <strong>${p.agent_name}</strong> &rarr; ${p.event_title}
+      <strong>${esc(p.agent_name)}</strong> &rarr; ${esc(p.event_title)}
       <div style="display:flex; gap:8px; margin-top:10px;">
         <button class="btn btn-outline" onclick="decideAssignment(${p.assignment_id}, 'reject')">Reject</button>
         <button class="btn btn-primary" onclick="decideAssignment(${p.assignment_id}, 'approve')">Approve</button>
@@ -107,22 +93,6 @@ loadPendingAssignments().catch(() => {
   document.getElementById('pending-assignments').innerHTML = '';
 });
 renderNav('home');
-async function loadPendingAssignments() {
-  const { pending } = await api('/gate-assignments/pending');
-  document.getElementById('pending-assignments').innerHTML = pending.map(p => `
-    <div class="card">
-      <strong>${p.agent_name}</strong> &rarr; ${p.event_title}
-      <div style="display:flex; gap:8px; margin-top:10px;">
-        <button class="btn btn-outline" onclick="decideAssignment(${p.assignment_id}, 'reject')">Reject</button>
-        <button class="btn btn-primary" onclick="decideAssignment(${p.assignment_id}, 'approve')">Approve</button>
-      </div>
-    </div>
-  `).join('');
-}
-async function decideAssignment(id, action) {
-  await api(`/gate-assignments/${id}/${action}`, { method: 'PATCH' });
-  loadPendingAssignments();
-}
 </script>
 </body>
 </html>

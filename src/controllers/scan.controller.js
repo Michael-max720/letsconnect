@@ -19,16 +19,30 @@ async function scanTicket(req, res) {
     return res.status(404).json({ result: 'invalid', message: 'This ticket is not recognised.' });
   }
 
-  // NEW: reject if this agent has no active assignment for this ticket's event
-const authorized = await gateAssignmentModel.isAgentActiveForEvent(req.session.userId, ticket.event_id);
-if (!authorized) {
-  await scanLogModel.recordScan({
-    ticketId: ticket.ticket_id,
-    gateAgentId: req.session.userId,
-    result: 'invalid',
-  });
-  return res.status(403).json({ result: 'invalid', message: 'You are not assigned to this event.' });
-}
+  // reject if this agent has no active assignment for this ticket's event
+  const authorized = await gateAssignmentModel.isAgentActiveForEvent(req.session.userId, ticket.event_id);
+  if (!authorized) {
+    await scanLogModel.recordScan({
+      ticketId: ticket.ticket_id,
+      gateAgentId: req.session.userId,
+      result: 'invalid',
+    });
+    return res.status(403).json({ result: 'invalid', message: 'You are not assigned to this event.' });
+  }
+
+  // the event was cancelled after this ticket was sold: nobody should be let in
+  if (ticket.event_status === 'cancelled') {
+    await scanLogModel.recordScan({
+      ticketId: ticket.ticket_id,
+      gateAgentId: req.session.userId,
+      result: 'invalid',
+    });
+    return res.status(409).json({
+      result: 'invalid',
+      message: 'This event was cancelled. Do not admit this ticket.',
+      eventTitle: ticket.event_title,
+    });
+  }
 
   // case 2: ticket exists but was already scanned in
   if (ticket.status === 'used') {
@@ -41,6 +55,7 @@ if (!authorized) {
       result: 'already_used',
       message: 'This ticket has already been used.',
       usedAt: ticket.used_at,
+      eventTitle: ticket.event_title,
     });
   }
 
@@ -54,7 +69,7 @@ if (!authorized) {
     return res.status(409).json({ result: 'invalid', message: `Ticket status is '${ticket.status}', not valid for entry.` });
   }
 
-  // case 4: genuinely valid — mark it used
+  // case 4: genuinely valid, so mark it used
   await ticketModel.markUsed(ticket.ticket_id);
   await scanLogModel.recordScan({
     ticketId: ticket.ticket_id,
@@ -66,6 +81,9 @@ if (!authorized) {
     result: 'valid',
     message: 'Entry approved.',
     eventTitle: ticket.event_title,
+    categoryName: ticket.category_name,
+    ageMin: ticket.age_min || 0,                 // e.g. 18 means "check the guest's age"
+    familyFriendly: !!ticket.family_friendly,
   });
 }
 

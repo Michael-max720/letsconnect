@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Add tickets - Lets Connect</title>
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
 </head>
 <body>
 <div class="topbar">Add ticket categories</div>
@@ -13,7 +15,7 @@
   <div class="card" id="event-summary" style="margin-bottom:20px;">
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <strong id="event-title-display">Loading...</strong>
-    <a href="/organiser-create-event.html?eventId=' + eventId" id="edit-details-link" style="font-size:13px; color:var(--navy); font-weight:600;">Edit event details</a>
+    <a href="/organiser-create-event.html?eventId=' + eventId" id="edit-details-link" style="font-size:0.8125rem; color:var(--navy); font-weight:600;">Edit event details</a>
   </div>
 </div>
 
@@ -37,6 +39,8 @@
 </div>
 
 <script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script src="/js/footer.js"></script>
 <script>
 const params = new URLSearchParams(window.location.search);
 const eventId = params.get('eventId');
@@ -50,13 +54,16 @@ async function loadEventSummary() {
 async function loadCategories() {
   const { categories } = await api('/ticket-categories/event/' + eventId);
   document.getElementById('existing-cats').innerHTML = categories.map(c => `
-    <div class="card" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;"
-         onclick="editCategory(${c.category_id}, '${c.name}', ${c.price}, ${c.quota})">
-      <span>${c.name}</span><span>${money(c.price)} &middot; Qty ${c.quota}</span>
+       <div class="card" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;"
+         data-id="${c.category_id}" data-name="${esc(c.name)}" data-price="${c.price}" data-quota="${c.quota}">
+      <span>${esc(c.name)}</span><span>${money(c.price)} &middot; Qty ${c.quota}</span>
     </div>
   `).join('');
 }
-
+document.getElementById('existing-cats').addEventListener('click', (e) => {
+  const card = e.target.closest('[data-id]');
+  if (card) editCategory(Number(card.dataset.id), card.dataset.name, card.dataset.price, card.dataset.quota);
+});
 function editCategory(id, name, price, quota) {
   document.getElementById('name').value = name;
   document.getElementById('price').value = price;
@@ -111,6 +118,8 @@ document.getElementById('invite-btn').addEventListener('click', async () => {
 
 loadCategories();
 loadEventSummary();
+
+renderNav('home');
 </script>
 </body>
 </html>

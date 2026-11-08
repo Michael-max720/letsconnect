@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Create event - Lets Connect</title>
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
 <script src="/js/settings.js"></script>
 </head>
 <body>
@@ -60,6 +61,8 @@
 </div>
 
 <script src="/js/api.js"></script>
+<script src="/js/nav.js"></script>
+<script src="/js/footer.js"></script>
 <script>
 const preview = document.getElementById('img-preview');
 document.getElementById('coverImageUrl').addEventListener('input', (e) => {
@@ -139,6 +142,8 @@ document.getElementById('event-form').addEventListener('submit', async (e) => {
     showError(err.message);
   }
 });
+
+renderNav('home');
 </script>
 </body>
 </html>

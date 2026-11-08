@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My ticket - Lets Connect</title>
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
 </head>
 <body>
 <div class="topbar">
@@ -35,14 +37,14 @@ async function load() {
 
 content.innerHTML = `
   <div style="${heroStyle} border-radius:16px; padding:24px; color:white; text-align:left; min-height:160px; display:flex; flex-direction:column; justify-content:flex-end;">
-    <strong style="font-size:18px;">${ticket.event_title}</strong>
-    <div style="font-size:13px; margin-top:6px; opacity:0.9;">${date}</div>
-    <div style="font-size:13px; opacity:0.9;">${ticket.venue || ''}</div>
+    <strong style="font-size:1.125rem;">${esc(ticket.event_title)}</strong>
+    <div style="font-size:0.8125rem; margin-top:6px; opacity:0.9;">${date}</div>
+    <div style="font-size:0.8125rem; opacity:0.9;">${ticket.venue || ''}</div>
   </div>
-  <div style="background:white; border:2px dashed var(--line); border-radius:16px; padding:20px; margin-top:-12px; position:relative;">
+  <div style="background:white; color:#1C1C1A; border:2px dashed var(--line); border-radius:16px; padding:20px; margin-top:-12px; position:relative;">
     <img src="${qrCode}" style="width:180px; height:180px; margin:0 auto 16px; display:block;">
     <div style="border-top:1px dashed var(--line); padding-top:14px;">
-      <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--sub);">Category</span><strong>${ticket.category_name}</strong></div>
+      <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--sub);">Category</span><strong>${esc(ticket.category_name)}</strong></div>
       <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--sub);">Ticket ID</span><strong>#${ticket.ticket_id}</strong></div>
       <div style="display:flex; justify-content:space-between; padding:4px 0;"><span style="color:var(--sub);">Status</span><strong style="text-transform:capitalize;">${ticket.status}</strong></div>
     </div>

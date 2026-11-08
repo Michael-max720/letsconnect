@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reports - Lets Connect</title>
 <link rel="stylesheet" href="/css/style.css">
+<script src="/js/translations.js"></script>
+<script src="/js/settings.js"></script>
 </head>
 <body>
 <div class="topbar">Reports</div>
@@ -15,18 +17,19 @@
 
   <h3 style="margin-top:24px;">Gate Agent performance</h3>
   <div id="agent-report">Loading...</div>
-  <p style="font-size:12px; color:var(--sub); margin-top:8px;">Note: scans of unrecognised or fake QR codes cannot be tied to a specific event and are not counted here.</p>
+  <p style="font-size:0.75rem; color:var(--sub); margin-top:8px;">Note: scans of unrecognised or fake QR codes cannot be tied to a specific event and are not counted here.</p>
 </div>
 
 <script src="/js/api.js"></script>
 <script src="/js/nav.js"></script>
+<script src="/js/footer.js"></script>
 <script>
 async function loadEventReport() {
   const { report } = await api('/organiser/reports/events');
   document.getElementById('event-report').innerHTML = report.map(r => `
     <div class="card">
-      <strong>${r.title}</strong> <span class="badge badge-${r.status === 'published' ? 'success' : 'warn'}">${r.status}</span>
-      <div style="font-size:13px; color:var(--sub); margin-top:6px;">
+      <strong>${esc(r.title)}</strong> <span class="badge badge-${r.status === 'published' ? 'success' : 'warn'}">${r.status}</span>
+      <div style="font-size:0.8125rem; color:var(--sub); margin-top:6px;">
         ${r.tickets_sold} tickets sold &middot; ${money(r.revenue)} revenue &middot; ${r.attended} attended
       </div>
     </div>
@@ -39,8 +42,8 @@ async function loadAgentReport() {
   if (report.length === 0) { list.innerHTML = '<p style="color:var(--sub);">No scan activity yet.</p>'; return; }
   list.innerHTML = report.map(r => `
     <div class="card">
-      <strong>${r.name}</strong>
-      <div style="font-size:13px; color:var(--sub); margin-top:6px;">
+      <strong>${esc(r.name)}</strong>
+      <div style="font-size:0.8125rem; color:var(--sub); margin-top:6px;">
         ${r.total_scans} total scans &middot; ${r.valid_scans} valid &middot; ${r.duplicate_scans} duplicate attempts
       </div>
     </div>
